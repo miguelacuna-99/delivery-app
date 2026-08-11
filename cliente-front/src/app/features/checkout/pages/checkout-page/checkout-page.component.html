@@ -1,0 +1,23 @@
+<ui-card class="checkout-page">
+  <span class="checkout-page__icon" aria-hidden="true">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M5 8h14l-1.4 10.1a2 2 0 0 1-2 1.9H8.4a2 2 0 0 1-2-1.9L5 8z" />
+      <path d="M9 8V6a3 3 0 0 1 6 0v2" />
+    </svg>
+  </span>
+  <h1>Confirmar pedido</h1>
+  <p>Al confirmar, tu carrito se convertira en un pedido pendiente de aceptacion por el comercio.</p>
+
+  @if (errorMessage()) {
+    <p class="checkout-page__error">
+      @if (errorStatus() === 409) {
+        El precio o la disponibilidad han cambiado, o el comercio no admite pedidos ahora mismo: {{ errorMessage() }}
+      } @else {
+        {{ errorMessage() }}
+      }
+    </p>
+    <a routerLink="/carrito">Volver al carrito</a>
+  }
+
+  <ui-button class="checkout-page__cta" [loading]="loading()" (clicked)="confirmar()">Confirmar pedido</ui-button>
+</ui-card>

@@ -1,0 +1,13 @@
+<button
+  class="ui-button"
+  [class]="'ui-button--' + variant()"
+  [class.ui-button--loading]="loading()"
+  [type]="type()"
+  [disabled]="disabled() || loading()"
+  (click)="onClick()"
+>
+  <span class="ui-button__label">
+    <ng-content></ng-content>
+  </span>
+  <span class="ui-button__spinner" aria-hidden="true"></span>
+</button>

@@ -1,0 +1,88 @@
+@startuml arquitectura-microservicios
+title Delivery App - Arquitectura de Microservicios
+
+skinparam componentStyle rectangle
+left to right direction
+
+actor "Cliente\n(App movil / Web)" as cliente
+actor "Comercio\n(ROOT / ADMIN / PERSONAL)" as comercio
+actor "Repartidor" as repartidor
+actor "Plataforma\n(X-Platform-Key)" as plataforma
+
+package "Plataforma Delivery (Docker)" {
+
+  component "auth-service\n:8081" as auth
+  component "comercio-service\n:8082" as comercioSvc
+  component "pedido-service\n:8083" as pedido
+  component "pago-service (mock)\n:8084" as pago
+  component "fidelidad-service\n:8085" as fidelidad
+  component "notificacion-service\n:8086" as notif
+
+  queue "RabbitMQ\ndelivery.exchange (topic)" as rabbit
+
+  database "auth_db" as authDb
+  database "comercio_db" as comercioDb
+  database "pedido_db" as pedidoDb
+  database "pago_db" as pagoDb
+  database "fidelidad_db" as fidelidadDb
+  database "notificacion_db" as notifDb
+}
+
+' Actores -> API REST
+cliente --> auth : login / registro
+cliente --> pedido : carrito, crear pedido,\npagar, seguimiento
+cliente --> comercioSvc : consultar comercios\ny catalogo (publico)
+cliente --> fidelidad : consultar sus puntos
+comercio --> auth : login, crear usuarios
+comercio --> comercioSvc : datos comercio,\ncatalogo productos
+comercio --> pedido : aceptar / rechazar / anular
+comercio --> fidelidad : cupones (ADMIN)
+comercio --> notif : PEDIDOS PENDIENTES\nPEDIDOS PAGADOS
+repartidor --> pedido : registrar numero pedido\n(-> ENTREGADO)
+plataforma --> comercioSvc : alta comercio,\nsuspender / renovar suscripcion
+plataforma --> auth : provisionar ROOT
+
+' Validacion de token (HTTP)
+comercioSvc ..> auth : /auth/validate
+pedido ..> auth : /auth/validate
+fidelidad ..> auth : /auth/validate
+notif ..> auth : /auth/validate
+
+' Consultas sincronas (en el checkout)
+pedido ..> comercioSvc : catalogo: revalidar\nprecio y disponibilidad
+pedido ..> fidelidad : validar cupon / saldo de puntos\n(X-Service-Key)
+
+' Eventos
+pedido --> rabbit : pedido.creado\npedido.aceptado\npedido.rechazado\npedido.cancelado\npedido.entregado\npago.solicitado\ndevolucion.solicitada
+pago --> rabbit : pago.completado\npago.fallido\ndevolucion.completada
+comercioSvc --> rabbit : comercio.suspendido\ncomercio.reactivado
+rabbit --> pago : pago.solicitado\ndevolucion.solicitada
+rabbit --> pedido : pago.completado\npago.fallido\ndevolucion.completada\ncomercio.*
+rabbit --> fidelidad : pedido.*\npago.completado\ndevolucion.completada
+rabbit --> notif : pedido.creado\npago.completado
+
+note bottom of rabbit
+  Binding wildcard solo si todas las claves
+  que captura llevan el mismo mensaje:
+  pedido.* si (PedidoEventMessage);
+  pago.* NO (mezcla pago.solicitado
+  -PedidoEventMessage- con los resultados
+  -PagoEventMessage-).
+end note
+
+' Persistencia
+auth --> authDb
+comercioSvc --> comercioDb
+pedido --> pedidoDb
+pago --> pagoDb
+fidelidad --> fidelidadDb
+notif --> notifDb
+
+note bottom of auth
+  JWT con claims:
+  userId, username, comercioId, tipo
+  (multi-tenant: cada comercio
+  solo ve sus operaciones)
+end note
+
+@enduml

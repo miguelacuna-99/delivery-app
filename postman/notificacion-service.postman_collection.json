@@ -1,0 +1,118 @@
+{
+  "info": {
+    "_postman_id": "3f7c1a90-1d2b-4e55-9a10-000000000006",
+    "name": "notificacion-service (8086)",
+    "description": "Las dos bandejas del comercio: PEDIDOS PENDIENTES (llega un pedido nuevo) y PEDIDOS PAGADOS (ya esta cobrado).\n\nSe llenan solas al consumir pedido.creado y pago.completado: no hay endpoint para crear notificaciones. El listado devuelve **solo las no leidas** — es una bandeja de trabajo, no un historico.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Bandeja PEDIDOS PENDIENTES",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200 OK', () => pm.response.to.have.status(200));",
+              "const lista = pm.response.json();",
+              "if (lista.length) { pm.environment.set('notificacionId', lista[0].id); }",
+              "console.log(lista.length + ' pedido(s) esperando respuesta');",
+              "lista.forEach(n => console.log('  ' + n.numeroPedido + ' (pedido ' + n.pedidoId + ')'));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{tokenPersonal}}" }],
+        "url": {
+          "raw": "{{notificacionUrl}}/api/notificaciones?tipo=PEDIDO_PENDIENTE",
+          "host": ["{{notificacionUrl}}"],
+          "path": ["api", "notificaciones"],
+          "query": [{ "key": "tipo", "value": "PEDIDO_PENDIENTE" }]
+        },
+        "description": "Se crea al consumir pedido.creado. Trae pedidoId y numeroPedido."
+      }
+    },
+    {
+      "name": "Bandeja PEDIDOS PAGADOS",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200 OK', () => pm.response.to.have.status(200));",
+              "const lista = pm.response.json();",
+              "if (lista.length) { pm.environment.set('notificacionId', lista[0].id); }",
+              "console.log(lista.length + ' pedido(s) cobrados y pendientes de preparar');"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{tokenPersonal}}" }],
+        "url": {
+          "raw": "{{notificacionUrl}}/api/notificaciones?tipo=PEDIDO_PAGADO",
+          "host": ["{{notificacionUrl}}"],
+          "path": ["api", "notificaciones"],
+          "query": [{ "key": "tipo", "value": "PEDIDO_PAGADO" }]
+        },
+        "description": "Se crea al consumir pago.completado. Aqui numeroPedido llega null: el contrato de pago no lo lleva."
+      }
+    },
+    {
+      "name": "Marcar como leida",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200 OK', () => pm.response.to.have.status(200));",
+              "pm.test('Queda leida', () => pm.expect(pm.response.json().leida).to.be.true);",
+              "console.log('Ya no saldra en el listado de la bandeja.');"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Authorization", "value": "Bearer {{tokenPersonal}}" }],
+        "url": {
+          "raw": "{{notificacionUrl}}/api/notificaciones/{{notificacionId}}/leida",
+          "host": ["{{notificacionUrl}}"],
+          "path": ["api", "notificaciones", "{{notificacionId}}", "leida"]
+        },
+        "description": "Una notificacion de otro comercio responde 404, no 403."
+      }
+    },
+    {
+      "name": "CLIENTE intenta ver la bandeja (403)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('403 Forbidden', () => pm.response.to.have.status(403));",
+              "// Las bandejas son del comercio: ROOT, ADMIN y PERSONAL"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{tokenCliente}}" }],
+        "url": {
+          "raw": "{{notificacionUrl}}/api/notificaciones?tipo=PEDIDO_PENDIENTE",
+          "host": ["{{notificacionUrl}}"],
+          "path": ["api", "notificaciones"],
+          "query": [{ "key": "tipo", "value": "PEDIDO_PENDIENTE" }]
+        }
+      }
+    }
+  ]
+}

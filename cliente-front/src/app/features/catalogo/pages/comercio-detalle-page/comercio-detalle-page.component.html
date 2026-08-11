@@ -1,0 +1,17 @@
+<div class="comercio-detalle-page">
+  <h1>Catalogo</h1>
+
+  @if (loading()) {
+    <ui-spinner label="Cargando catalogo..." />
+  } @else if (error()) {
+    <p class="comercio-detalle-page__error">{{ error() }}</p>
+  } @else if (productos().length === 0) {
+    <p class="comercio-detalle-page__vacio">Este comercio no tiene productos disponibles.</p>
+  } @else {
+    <div class="comercio-detalle-page__grid">
+      @for (producto of productos(); track producto.id) {
+        <app-producto-card [producto]="producto" (añadirAlCarrito)="onAnadirAlCarrito($event)" />
+      }
+    </div>
+  }
+</div>

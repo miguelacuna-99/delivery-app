@@ -1,0 +1,51 @@
+.puntos-page {
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.puntos-page__error {
+  color: var(--color-danger);
+  background-color: var(--color-danger-bg);
+  border-radius: var(--radius-sm);
+  padding: var(--space-3) var(--space-4);
+}
+
+.puntos-page__saldo {
+  background-color: var(--color-yellow-100);
+  color: var(--color-ink-950);
+  border-radius: var(--radius-md);
+  padding: var(--space-4) var(--space-5);
+  font-size: 1rem;
+
+  strong {
+    color: var(--color-yellow-600);
+    font-size: 1.4rem;
+  }
+}
+
+.puntos-page__historial {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+
+  li {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    background-color: var(--color-surface);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-sm);
+    font-size: 0.88rem;
+    color: var(--color-ink-600);
+
+    span:last-child {
+      font-weight: 700;
+      color: var(--color-ink-950);
+      white-space: nowrap;
+    }
+  }
+}

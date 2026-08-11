@@ -1,0 +1,13 @@
+<ui-card class="pedido-card" [class.pedido-card--destacado]="destacado()">
+  <div class="pedido-card__header">
+    <div>
+      <h3>Pedido {{ pedido().numeroPedido ?? pedido().id }}</h3>
+      <p class="pedido-card__fecha">{{ pedido().fechaCreacion | date: 'medium' }}</p>
+    </div>
+    <ui-badge-estado-pedido [estado]="pedido().estado" />
+  </div>
+
+  <app-pedido-timeline [pedido]="pedido()" />
+
+  <p class="pedido-card__total">Total: <strong>{{ pedido().total.toFixed(2) }} €</strong></p>
+</ui-card>

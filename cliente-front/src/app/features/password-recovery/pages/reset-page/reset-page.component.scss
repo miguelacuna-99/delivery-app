@@ -1,0 +1,21 @@
+.reset-page {
+  display: block;
+  width: 100%;
+  max-width: 380px;
+
+  form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    margin: var(--space-4) 0;
+  }
+}
+
+.reset-page__submit {
+  --ui-button-width: 100%;
+}
+
+.reset-page__error {
+  color: var(--color-danger);
+  font-size: 0.85rem;
+}

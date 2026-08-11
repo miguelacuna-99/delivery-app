@@ -1,0 +1,52 @@
+.comercio-card {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+  cursor: pointer;
+  transition:
+    transform var(--duration-fast) var(--ease-standard),
+    box-shadow var(--duration-fast) var(--ease-standard);
+
+  &:hover,
+  &:focus-visible {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+  }
+
+  h3 {
+    margin: 0 0 var(--space-1);
+    font-size: 1rem;
+  }
+
+  p {
+    margin: 2px 0;
+    font-size: 0.85rem;
+    color: var(--color-ink-600);
+  }
+}
+
+.comercio-card__avatar {
+  width: 3rem;
+  height: 3rem;
+  font-size: 1rem;
+}
+
+.comercio-card__body {
+  min-width: 0;
+  flex: 1;
+}
+
+.comercio-card__telefono {
+  color: var(--color-ink-600);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .comercio-card {
+    transition: none !important;
+
+    &:hover,
+    &:focus-visible {
+      transform: none !important;
+    }
+  }
+}

@@ -1,0 +1,19 @@
+<ui-card class="reset-page">
+  <h1>Restablecer contraseña</h1>
+
+  @if (!token) {
+    <p class="reset-page__error">Este enlace no incluye un token valido.</p>
+  } @else {
+    <form (ngSubmit)="submit()">
+      <ui-input label="Nueva contraseña" type="password" [value]="nuevaPassword()" (valueChange)="nuevaPassword.set($event)" />
+
+      @if (errorMessage()) {
+        <p class="reset-page__error">{{ errorMessage() }}</p>
+      }
+
+      <ui-button class="reset-page__submit" type="submit" [loading]="loading()">Cambiar contraseña</ui-button>
+    </form>
+  }
+
+  <a routerLink="/login">Volver a iniciar sesion</a>
+</ui-card>

@@ -1,0 +1,45 @@
+:root {
+  /* Marca: azul + amarillo, sobre negro/blanco */
+  --color-blue-700: #1B3FAE;
+  --color-blue-600: #2451D6;   /* primario: botones, links, foco */
+  --color-blue-100: #E6EDFC;   /* fondos suaves, badges ACEPTADO */
+  --color-yellow-600: #E0A400; /* texto sobre amarillo, hover de acento */
+  --color-yellow-400: #FFC93C; /* acento: highlights, badges PENDIENTE, detalles de marca */
+  --color-yellow-100: #FFF7DE;
+
+  /* Neutros (nunca #000/#fff puros) */
+  --color-ink-950: #14171F;    /* texto principal */
+  --color-ink-600: #4B5265;    /* texto secundario/muted */
+  --color-ink-300: #C7CCD6;    /* bordes fuertes */
+  --color-border: #E2E5EC;     /* bordes normales */
+  --color-surface: #FFFFFF;    /* tarjetas */
+  --color-surface-alt: #F5F7FB;/* fondo de página */
+
+  /* Semanticos (SOLO para estados funcionales: éxito/error/pedido, no decorativos) */
+  --color-success: #0F9D58;
+  --color-success-bg: #E3F7EA;
+  --color-danger: #D3402B;
+  --color-danger-bg: #FCEAE7;
+
+  /* Forma: sistema mixto documentado (botones pill, tarjetas/inputs radio medio) */
+  --radius-sm: 8px;    /* inputs */
+  --radius-md: 12px;   /* cards */
+  --radius-full: 999px;/* botones, badges, avatares */
+
+  /* Sombras tintadas (nunca negro puro) */
+  --shadow-sm: 0 1px 2px rgba(20,23,31,0.08);
+  --shadow-md: 0 8px 24px rgba(36,81,214,0.14);
+  --shadow-yellow: 0 6px 18px rgba(224,164,0,0.28);
+
+  /* Tipografia: pila de sistema robusta, sin depender de fuentes externas */
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+
+  /* Movimiento */
+  --ease-standard: cubic-bezier(0.16,1,0.3,1);
+  --duration-fast: 150ms;
+  --duration-base: 220ms;
+
+  /* Espaciado (escala 4px) */
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px;
+  --space-5: 24px; --space-6: 32px; --space-8: 48px;
+}

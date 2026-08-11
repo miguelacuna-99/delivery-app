@@ -1,0 +1,18 @@
+.mis-pedidos-page {
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.mis-pedidos-page__error {
+  color: var(--color-danger);
+  background-color: var(--color-danger-bg);
+  border-radius: var(--radius-sm);
+  padding: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+.mis-pedidos-page__vacio {
+  color: var(--color-ink-600);
+  padding: var(--space-6) 0;
+  text-align: center;
+}

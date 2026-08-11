@@ -1,0 +1,23 @@
+<ui-card class="login-page">
+  <h1>Iniciar sesion</h1>
+
+  @if (expired) {
+    <p class="login-page__warning">Tu sesion ha caducado. Inicia sesion de nuevo.</p>
+  }
+
+  <form (ngSubmit)="submit()">
+    <ui-input label="Usuario" [value]="username()" (valueChange)="username.set($event)" />
+    <ui-input label="Contraseña" type="password" [value]="password()" (valueChange)="password.set($event)" />
+
+    @if (errorMessage()) {
+      <p class="login-page__error">{{ errorMessage() }}</p>
+    }
+
+    <ui-button class="login-page__submit" type="submit" [loading]="loading()">Entrar</ui-button>
+  </form>
+
+  <div class="login-page__links">
+    <a routerLink="/registro">Crear cuenta</a>
+    <a routerLink="/password/olvide">He olvidado mi contraseña</a>
+  </div>
+</ui-card>

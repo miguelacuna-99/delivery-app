@@ -1,0 +1,23 @@
+.comercio-detalle-page {
+  width: 100%;
+}
+
+.comercio-detalle-page__error {
+  color: var(--color-danger);
+  background-color: var(--color-danger-bg);
+  border-radius: var(--radius-sm);
+  padding: var(--space-3) var(--space-4);
+}
+
+.comercio-detalle-page__vacio {
+  color: var(--color-ink-600);
+  padding: var(--space-6) 0;
+  text-align: center;
+}
+
+.comercio-detalle-page__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--space-5);
+  align-items: stretch;
+}

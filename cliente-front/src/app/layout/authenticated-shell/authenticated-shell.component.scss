@@ -1,0 +1,20 @@
+.authenticated-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: var(--color-surface-alt);
+}
+
+.authenticated-shell__content {
+  flex: 1;
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: var(--space-6) var(--space-4);
+}
+
+@media (max-width: 768px) {
+  .authenticated-shell__content {
+    padding: var(--space-5) var(--space-4);
+  }
+}

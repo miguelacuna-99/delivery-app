@@ -1,0 +1,233 @@
+{
+  "info": {
+    "_postman_id": "3f7c1a90-1d2b-4e55-9a10-000000000005",
+    "name": "fidelidad-service (8085)",
+    "description": "Cupones y puntos.\n\nDos detalles que se notan al probar: solo el **ADMIN** crea y anula cupones (el ROOT solo los consulta), y los endpoints internos que usa pedido-service ('validar cupon' y 'saldo') **no llevan autenticacion**.\n\nLos puntos se ganan pagando (1 punto por euro) y se canjean a 1 punto = 0,01 EUR. Para tener saldo con el que probar, completa antes un pedido hasta PAGADO.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Cupones",
+      "item": [
+        {
+          "name": "Crear cupon (ADMIN)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Codigo unico por ejecucion: el codigo tiene indice unico y repetirlo da 409",
+                  "pm.environment.set('codigoCupon', 'PROMO' + Date.now().toString().slice(-6));",
+                  "// Caduca dentro de 30 dias",
+                  "pm.environment.set('cuponCaducidad', new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created', () => pm.response.to.have.status(201));",
+                  "const c = pm.response.json();",
+                  "pm.environment.set('cuponId', c.id);",
+                  "pm.test('Nace ACTIVO', () => pm.expect(c.estado).to.eql('ACTIVO'));",
+                  "console.log('Cupon ' + c.codigo + ' al ' + c.porcentajeDescuento + '%');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{tokenAdmin}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codigo\": \"{{codigoCupon}}\",\n  \"porcentajeDescuento\": 10,\n  \"usosMaximosPorUsuario\": 2,\n  \"fechaCaducidad\": \"{{cuponCaducidad}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{fidelidadUrl}}/api/cupones", "host": ["{{fidelidadUrl}}"], "path": ["api", "cupones"] },
+            "description": "El comercioId sale del token. fechaCaducidad puede ir a null para un cupon sin vencimiento."
+          }
+        },
+        {
+          "name": "Listar cupones del comercio",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{tokenAdmin}}" }],
+            "url": { "raw": "{{fidelidadUrl}}/api/cupones", "host": ["{{fidelidadUrl}}"], "path": ["api", "cupones"] },
+            "description": "ROOT y ADMIN pueden consultarlos."
+          }
+        },
+        {
+          "name": "Validar cupon (lo llama pedido-service)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "const r = pm.response.json();",
+                  "console.log(r.usable ? ('Usable, ' + r.porcentajeDescuento + '% de descuento') : 'No usable: anulado, caducado, de otro comercio o sin usos para este cliente');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "X-Service-Key", "value": "{{serviceKey}}" }],
+            "url": {
+              "raw": "{{fidelidadUrl}}/api/cupones/validar?codigo={{codigoCupon}}&comercioId={{comercioId}}&clienteId={{clienteId}}",
+              "host": ["{{fidelidadUrl}}"],
+              "path": ["api", "cupones", "validar"],
+              "query": [
+                { "key": "codigo", "value": "{{codigoCupon}}" },
+                { "key": "comercioId", "value": "{{comercioId}}" },
+                { "key": "clienteId", "value": "{{clienteId}}" }
+              ]
+            },
+            "description": "Endpoint interno: lo llama pedido-service con la clave de servicio (X-Service-Key), no con JWT. Devuelve {usable, porcentajeDescuento}.\n\nEfecto lateral util: si el cupon esta ACTIVO pero ya vencio, esta llamada lo persiste como CADUCADO (caducidad perezosa)."
+          }
+        },
+        {
+          "name": "Validar cupon sin clave de servicio (401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('401 Unauthorized', () => pm.response.to.have.status(401));",
+                  "// Sin la clave, este endpoint exponia el saldo de cualquier cliente conocido su id"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{fidelidadUrl}}/api/cupones/validar?codigo={{codigoCupon}}&comercioId={{comercioId}}&clienteId={{clienteId}}",
+              "host": ["{{fidelidadUrl}}"],
+              "path": ["api", "cupones", "validar"],
+              "query": [
+                { "key": "codigo", "value": "{{codigoCupon}}" },
+                { "key": "comercioId", "value": "{{comercioId}}" },
+                { "key": "clienteId", "value": "{{clienteId}}" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Anular cupon (ADMIN)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Queda ANULADO', () => pm.expect(pm.response.json().estado).to.eql('ANULADO'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{tokenAdmin}}" }],
+            "url": {
+              "raw": "{{fidelidadUrl}}/api/cupones/{{cuponId}}/anular",
+              "host": ["{{fidelidadUrl}}"],
+              "path": ["api", "cupones", "{{cuponId}}", "anular"]
+            }
+          }
+        },
+        {
+          "name": "ROOT intenta crear un cupon (403)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('403 Forbidden', () => pm.response.to.have.status(403));",
+                  "// Decision de diseno: gestionar cupones es exclusivo del ADMIN"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{tokenRoot}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codigo\": \"NO-DEBERIA\",\n  \"porcentajeDescuento\": 50,\n  \"usosMaximosPorUsuario\": 1\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{fidelidadUrl}}/api/cupones", "host": ["{{fidelidadUrl}}"], "path": ["api", "cupones"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Puntos",
+      "item": [
+        {
+          "name": "Mis puntos (CLIENTE)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "const c = pm.response.json();",
+                  "console.log('Saldo: ' + c.saldo + ' puntos (' + (c.saldo / 100).toFixed(2) + ' EUR de descuento)');",
+                  "(c.movimientos || []).forEach(m => console.log('  ' + m.tipo + ' ' + m.puntos + ' (pedido ' + m.pedidoId + ')'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{tokenCliente}}" }],
+            "url": { "raw": "{{fidelidadUrl}}/api/puntos/me", "host": ["{{fidelidadUrl}}"], "path": ["api", "puntos", "me"] },
+            "description": "Saldo e historial. Tipos de movimiento: GANADO (al pagar), CANJEADO (reserva al crear el pedido), DEVUELTO (rechazo o pago fallido) y RETIRADO (el pedido acabo devuelto)."
+          }
+        },
+        {
+          "name": "Saldo de un cliente (lo llama pedido-service)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "console.log('Saldo: ' + pm.response.json().saldo + ' puntos');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "X-Service-Key", "value": "{{serviceKey}}" }],
+            "url": {
+              "raw": "{{fidelidadUrl}}/api/puntos/{{clienteId}}/saldo",
+              "host": ["{{fidelidadUrl}}"],
+              "path": ["api", "puntos", "{{clienteId}}", "saldo"]
+            },
+            "description": "Endpoint interno protegido con la clave de servicio a servicio. Sin la cabecera X-Service-Key responde 401."
+          }
+        }
+      ]
+    }
+  ]
+}

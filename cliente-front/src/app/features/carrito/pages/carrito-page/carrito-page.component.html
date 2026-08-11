@@ -1,0 +1,57 @@
+<div class="carrito-page">
+  <h1>Mi carrito</h1>
+
+  @if (loading()) {
+    <ui-spinner label="Cargando carrito..." />
+  } @else if (error()) {
+    <p class="carrito-page__error">{{ error() }}</p>
+  } @else if (carrito() && (carrito()!.items?.length ?? 0) > 0) {
+    @let c = carrito()!;
+
+    <ui-card class="carrito-page__items">
+      @for (item of c.items ?? []; track item.productoId) {
+        <app-carrito-item-row
+          [item]="item"
+          (cantidadChange)="onCantidadChange(item.productoId, $event)"
+          (eliminar)="onEliminar(item.productoId)"
+        />
+      }
+    </ui-card>
+
+    <ui-card class="carrito-page__resumen">
+      @if (c.subtotal !== undefined) {
+        <div class="carrito-page__linea">
+          <span>Subtotal</span>
+          <span>{{ c.subtotal!.toFixed(2) }} €</span>
+        </div>
+      }
+      @if (c.descuento) {
+        <div class="carrito-page__linea carrito-page__linea--descuento">
+          <span>Descuento</span>
+          <span>-{{ c.descuento!.toFixed(2) }} €</span>
+        </div>
+      }
+      @if (c.total !== undefined) {
+        <div class="carrito-page__linea carrito-page__linea--total">
+          <span>Total</span>
+          <span>{{ c.total!.toFixed(2) }} €</span>
+        </div>
+      }
+    </ui-card>
+
+    <div class="carrito-page__acciones">
+      <ui-button variant="ghost" [loading]="saving()" (clicked)="vaciar()">Vaciar carrito</ui-button>
+      <ui-button [loading]="saving()" (clicked)="irACheckout()">Ir a pagar</ui-button>
+    </div>
+  } @else {
+    <div class="carrito-page__vacio">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M4 6h2l2.2 11.1a1.5 1.5 0 0 0 1.47 1.2h8.26a1.5 1.5 0 0 0 1.47-1.2L21 9H7" />
+        <circle cx="9.5" cy="20.5" r="1.1" fill="currentColor" stroke="none" />
+        <circle cx="17.5" cy="20.5" r="1.1" fill="currentColor" stroke="none" />
+      </svg>
+      <p>Tu carrito esta vacio.</p>
+      <a routerLink="/catalogo">Explorar comercios</a>
+    </div>
+  }
+</div>

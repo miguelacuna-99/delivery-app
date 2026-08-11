@@ -1,0 +1,19 @@
+<div class="mis-pedidos-page">
+  <h1>Mis pedidos</h1>
+
+  @if (cargandoPrimeraVez()) {
+    <ui-spinner label="Cargando pedidos..." />
+  } @else {
+    @if (error()) {
+      <p class="mis-pedidos-page__error">{{ error() }}</p>
+    }
+
+    @if (pedidos().length === 0) {
+      <p class="mis-pedidos-page__vacio">Todavia no tienes pedidos.</p>
+    } @else {
+      @for (pedido of pedidos(); track pedido.id) {
+        <app-pedido-card [pedido]="pedido" [destacado]="pedido.id === nuevoId" />
+      }
+    }
+  }
+</div>

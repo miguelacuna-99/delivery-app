@@ -1,0 +1,265 @@
+@startuml modelo-datos
+title Delivery App - Modelo de Datos (colecciones MongoDB por servicio)
+
+hide circle
+skinparam classAttributeIconSize 0
+
+note as N_contracts
+  Los enums transversales (TipoUsuario, EstadoPedido, EstadoPago)
+  y los mensajes de eventos viven en la libreria versionada
+  **delivery-contracts** (semver); cada servicio fija su version.
+end note
+
+package "comercio_db (comercio-service)" {
+  enum PlanSuscripcion {
+    MENSUAL
+    ANUAL
+  }
+
+  enum EstadoSuscripcion {
+    ACTIVA
+    EN_GRACIA
+    SUSPENDIDA
+  }
+
+  class Comercio {
+    +id : String
+    +nombre : String
+    +cif : String <<unico>>
+    +direccion : String
+    +telefono : String
+    +email : String
+    +activo : boolean
+    +plan : PlanSuscripcion
+    +estadoSuscripcion : EstadoSuscripcion
+    +fechaInicioSuscripcion : Instant
+    +fechaFinSuscripcion : Instant
+    +esOperativo() : boolean
+  }
+
+  note bottom of Comercio
+    esOperativo(): ACTIVA y EN_GRACIA
+    operan; SUSPENDIDA no.
+    Solo la plataforma (X-Platform-Key)
+    da de alta, suspende y renueva.
+  end note
+
+  class Producto {
+    +id : String
+    +comercioId : String
+    +nombre : String
+    +descripcion : String
+    +precio : BigDecimal
+    +disponible : boolean
+  }
+}
+
+package "auth_db (auth-service)" {
+  enum TipoUsuario {
+    ROOT
+    ADMIN
+    PERSONAL
+    REPARTIDOR
+    CLIENTE
+  }
+
+  class Usuario {
+    +id : String
+    +comercioId : String
+    +username : String
+    +password : String <<BCrypt>>
+    +mail : String
+    +telefono : String [opcional]
+    +tipo : TipoUsuario
+    +mustChangePassword : boolean <<ROOT provisionado>>
+  }
+
+  class PasswordResetToken {
+    +id : String
+    +userId : String
+    +mail : String
+    +tokenHash : String <<URL cifrada al correo>>
+    +expiresAt : Instant
+    +usado : boolean
+    +fechaCreacion : Instant
+  }
+
+  class Cliente {
+    +id : String
+    +comercioId : String
+    +username : String
+    +password : String <<BCrypt>>
+    +mail : String
+    +direccionDomicilio : String
+    +telefono : String [opcional]
+    +tipo : TipoUsuario = CLIENTE
+  }
+}
+
+package "pedido_db (pedido-service)" {
+  enum EstadoPedido {
+    PENDIENTE
+    ACEPTADO
+    RECHAZADO
+    PAGADO
+    ENTREGADO
+    CANCELADO
+    PENDIENTE_DEVOLUCION
+    DEVUELTO
+  }
+
+  class Carrito {
+    +id : String
+    +clienteId : String
+    +comercioId : String
+    +items : List<ItemCarrito>
+    +codigoCupon : String [opcional]
+    +puntosAplicados : int
+  }
+
+  class ItemCarrito {
+    +productoId : String
+    +nombre : String
+    +precio : BigDecimal
+    +cantidad : int
+  }
+
+  class Pedido {
+    +id : String
+    +numeroPedido : String <<solo lo conoce el cliente>>
+    +comercioId : String
+    +clienteId : String
+    +items : List<ItemCarrito> <<snapshot>>
+    +subtotal : BigDecimal
+    +descuentoCupon : BigDecimal
+    +descuentoPuntos : BigDecimal
+    +total : BigDecimal
+    +estado : EstadoPedido
+    +tiempoEstimadoMin : Integer [al aceptar]
+    +mensajeComercio : String [opcional]
+    +motivoCancelacion : String [opcional]
+    +motivoAnulacion : String [opcional]
+    +fechaCreacion : Instant
+    +fechaAceptacion : Instant
+    +fechaRechazo : Instant
+    +fechaPago : Instant
+    +fechaEntrega : Instant
+    +fechaCancelacion : Instant
+    +fechaAnulacion : Instant
+    +fechaDevolucion : Instant
+  }
+
+  class EstadoComercio {
+    +id : String
+    +comercioId : String <<unico>>
+    +operativo : boolean
+    +fechaActualizacion : Instant
+  }
+
+  note bottom of Pedido
+    Todas las transiciones fechadas:
+    base para informes y facturacion.
+    Los items son un snapshot tomado
+    del catalogo, no del carrito.
+  end note
+
+  note bottom of EstadoComercio
+    Replica local alimentada por
+    comercio.suspendido / comercio.reactivado.
+    Un comercio desconocido se considera
+    operativo (fail-open).
+  end note
+}
+
+package "pago_db (pago-service mock)" {
+  enum EstadoPago {
+    PENDIENTE
+    COMPLETADO
+    FALLIDO
+    DEVUELTO
+  }
+
+  class Pago {
+    +id : String
+    +pedidoId : String <<unico>>
+    +comercioId : String
+    +clienteId : String
+    +importe : BigDecimal
+    +firma : String <<mock pasarela>>
+    +estado : EstadoPago
+    +fecha : Instant
+    +fechaDevolucion : Instant
+  }
+}
+
+package "fidelidad_db (fidelidad-service)" {
+  enum EstadoCupon {
+    ACTIVO
+    ANULADO
+    CADUCADO
+  }
+
+  class Cupon {
+    +id : String
+    +comercioId : String
+    +codigo : String
+    +porcentajeDescuento : BigDecimal
+    +usosMaximosPorUsuario : int
+    +estado : EstadoCupon <<ADMIN crea / anula>>
+    +fechaCaducidad : Instant
+  }
+
+  class UsoCupon {
+    +clienteId : String
+    +contador : int
+  }
+
+  class CuentaPuntos {
+    +clienteId : String
+    +saldo : int
+  }
+
+  class MovimientoPuntos {
+    +pedidoId : String
+    +tipo : GANADO | CANJEADO | DEVUELTO | RETIRADO
+    +puntos : int <<con signo>>
+    +fecha : Instant
+  }
+
+  note bottom of MovimientoPuntos
+    CANJEADO/RETIRADO restan (puntos < 0),
+    GANADO/DEVUELTO suman. El saldo se
+    reconstruye desde los movimientos:
+    por eso las devoluciones son idempotentes.
+  end note
+}
+
+package "notificacion_db (notificacion-service)" {
+  class Notificacion {
+    +id : String
+    +comercioId : String
+    +tipo : PEDIDO_PENDIENTE | PEDIDO_PAGADO
+    +pedidoId : String
+    +numeroPedido : String [null en PEDIDO_PAGADO]
+    +leida : boolean
+    +fecha : Instant
+  }
+}
+
+' Relaciones (referencias por id entre servicios)
+Comercio "1" o-- "n" Producto
+Comercio "1" o-- "n" Usuario : comercioId
+PasswordResetToken "n" --> "1" Usuario : userId (o Cliente)
+Comercio "1" o-- "n" Cliente : comercioId
+Cliente "1" -- "1" Carrito : clienteId
+Carrito "1" *-- "n" ItemCarrito
+Pedido "n" --> "1" Cliente : clienteId
+Pedido "n" --> "1" Comercio : comercioId
+Pedido "1" *-- "n" ItemCarrito : snapshot
+Pago "1" --> "1" Pedido : pedidoId
+Cupon "1" *-- "n" UsoCupon
+CuentaPuntos "1" *-- "n" MovimientoPuntos
+CuentaPuntos "1" --> "1" Cliente : clienteId
+Notificacion "n" --> "1" Comercio : comercioId
+
+@enduml

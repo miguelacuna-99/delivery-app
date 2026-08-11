@@ -1,0 +1,22 @@
+.forgot-page {
+  display: block;
+  width: 100%;
+  max-width: 380px;
+
+  form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    margin-top: var(--space-4);
+  }
+
+  p {
+    color: var(--color-ink-600);
+    font-size: 0.9rem;
+  }
+}
+
+.forgot-page__submit {
+  --ui-button-width: 100%;
+  margin-top: var(--space-1);
+}

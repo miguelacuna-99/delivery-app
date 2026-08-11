@@ -1,0 +1,29 @@
+@startuml estados-pedido
+title Delivery App - Maquina de estados del Pedido
+
+[*] --> PENDIENTE : Cliente envia pedido\n(notificacion PEDIDOS PENDIENTES)
+
+PENDIENTE --> ACEPTADO : Comercio acepta\n(fija tiempo estimado)\nFidelidad consolida canje
+PENDIENTE --> RECHAZADO : Comercio deniega\n(mensaje opcional)\nFidelidad libera reserva
+
+ACEPTADO --> PAGADO : pago.completado\n(notificacion PEDIDOS PAGADOS,\nse otorgan puntos por gasto)
+ACEPTADO --> CANCELADO : pago.fallido o\nplazo de pago vencido\n(publica pedido.cancelado:\nse devuelven puntos y uso de cupon)
+
+PAGADO --> ENTREGADO : Repartidor registra\nnumeroPedido
+PAGADO --> PENDIENTE_DEVOLUCION : Comercio anula el pedido\n(devolucion.solicitada al banco mock)
+
+PENDIENTE_DEVOLUCION --> DEVUELTO : Banco confirma el ingreso\n(devolucion.completada)\nFidelidad retira los puntos\notorgados por el pedido
+
+RECHAZADO --> [*]
+CANCELADO --> [*]
+ENTREGADO --> [*]
+DEVUELTO --> [*]
+
+note bottom
+  Cada transicion queda fechada en el Pedido
+  (fechaCreacion, fechaAceptacion, fechaPago,
+  fechaEntrega, fechaAnulacion, fechaDevolucion...)
+  para informes y facturacion.
+end note
+
+@enduml

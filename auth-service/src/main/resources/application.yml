@@ -1,0 +1,32 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: auth-service
+
+  data:
+    mongodb:
+      uri: mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@${MONGO_HOST:localhost}:${MONGO_PORT:27017}/auth_db?authSource=admin
+
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+
+app:
+  # URL base del frontend donde el usuario fija la nueva contrasena
+  reset-base-url: ${RESET_BASE_URL:http://localhost:3000/reset-password}
+  reset-token-expiration-min: 30
+
+platform:
+  # API key para provisionar usuarios ROOT (solo la plataforma). En produccion, variable de entorno.
+  api-key: ${PLATFORM_API_KEY:dev-platform-key-cambiar}
+
+jwt:
+  # Minimo 32 caracteres para HS256. En produccion usar variable de entorno.
+  secret: "${JWT_SECRET:S3cr3tK3yP4raJWTqu3D3b3T3n3rM4s3D32C4r4ct3r3sP4r4HS256}"
+  expiration-ms: 86400000   # 24 horas
+
+logging:
+  level:
+    es.delivery.manager.auth: DEBUG

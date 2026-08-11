@@ -1,0 +1,193 @@
+version: '3.9'
+
+x-service-env: &service-env
+  MONGO_USERNAME: root
+  MONGO_PASSWORD: root
+  MONGO_HOST: mongo
+  RABBITMQ_HOST: rabbitmq
+  RABBITMQ_USERNAME: admin
+  RABBITMQ_PASSWORD: admin
+  AUTH_SERVICE_URL: http://auth-service:8081
+  COMERCIO_SERVICE_URL: http://comercio-service:8082
+  FIDELIDAD_SERVICE_URL: http://fidelidad-service:8085
+  # Clave de servicio a servicio: pedido-service la envia, fidelidad-service la exige
+  SERVICE_API_KEY: dev-service-key-cambiar
+
+services:
+  # ---------- Infraestructura ----------
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"      # Puerto AMQP
+      - "15672:15672"    # UI de administracion
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin
+    networks:
+      - backend
+
+  mongo:
+    image: mongo:6
+    container_name: mongo
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: root
+    networks:
+      - backend
+
+  mongo-express:
+    image: mongo-express
+    container_name: mongo-express
+    ports:
+      - "8090:8081"      # host 8090 (el 8081 lo usa auth-service)
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: root
+      ME_CONFIG_MONGODB_ADMINPASSWORD: root
+      ME_CONFIG_MONGODB_SERVER: mongo
+    depends_on:
+      - mongo
+    networks:
+      - backend
+
+  # ---------- Microservicios ----------
+  auth-service:
+    build:
+      context: .
+      dockerfile: auth-service/Dockerfile
+    container_name: auth-service
+    ports:
+      - "8081:8081"
+    environment:
+      MONGO_USERNAME: root
+      MONGO_PASSWORD: root
+      MONGO_HOST: mongo
+    depends_on:
+      - mongo
+    networks:
+      - backend
+
+  comercio-service:
+    build:
+      context: .
+      dockerfile: comercio-service/Dockerfile
+    container_name: comercio-service
+    ports:
+      - "8082:8082"
+    environment: *service-env
+    depends_on:
+      - mongo
+      - rabbitmq
+      - auth-service
+    networks:
+      - backend
+
+  pedido-service:
+    build:
+      context: .
+      dockerfile: pedido-service/Dockerfile
+    container_name: pedido-service
+    ports:
+      - "8083:8083"
+    environment: *service-env
+    depends_on:
+      - mongo
+      - rabbitmq
+      - auth-service
+      - comercio-service
+      - fidelidad-service
+    networks:
+      - backend
+
+  pago-service:
+    build:
+      context: .
+      dockerfile: pago-service/Dockerfile
+    container_name: pago-service
+    ports:
+      - "8084:8084"
+    environment: *service-env
+    depends_on:
+      - mongo
+      - rabbitmq
+    networks:
+      - backend
+
+  fidelidad-service:
+    build:
+      context: .
+      dockerfile: fidelidad-service/Dockerfile
+    container_name: fidelidad-service
+    ports:
+      - "8085:8085"
+    environment: *service-env
+    depends_on:
+      - mongo
+      - rabbitmq
+      - auth-service
+    networks:
+      - backend
+
+  notificacion-service:
+    build:
+      context: .
+      dockerfile: notificacion-service/Dockerfile
+    container_name: notificacion-service
+    ports:
+      - "8086:8086"
+    environment: *service-env
+    depends_on:
+      - mongo
+      - rabbitmq
+      - auth-service
+    networks:
+      - backend
+
+  # ---------- Gateway ----------
+  gateway:
+    build:
+      context: ./gateway
+      dockerfile: Dockerfile
+    container_name: gateway
+    ports:
+      - "8080:80"
+    depends_on:
+      - auth-service
+      - comercio-service
+      - pedido-service
+      - pago-service
+      - fidelidad-service
+      - notificacion-service
+    networks:
+      - backend
+
+  # ---------- Frontends ----------
+  cliente-front:
+    build:
+      context: ./cliente-front
+      dockerfile: Dockerfile
+    container_name: cliente-front
+    ports:
+      - "8091:80"
+    depends_on:
+      - gateway
+    networks:
+      - backend
+
+  admin-front:
+    build:
+      context: ./admin-front
+      dockerfile: Dockerfile
+    container_name: admin-front
+    ports:
+      - "8092:80"
+    depends_on:
+      - gateway
+    networks:
+      - backend
+
+networks:
+  backend:
+    driver: bridge

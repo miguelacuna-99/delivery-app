@@ -1,0 +1,26 @@
+<ol class="pedido-timeline">
+  @for (paso of pasos(); track paso.label) {
+    <li class="pedido-timeline__paso" [class]="'pedido-timeline__paso--' + paso.estado">
+      <span class="pedido-timeline__punto" aria-hidden="true">
+        @switch (paso.estado) {
+          @case ('completado') {
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M6 12.5l4 4 8-9" />
+            </svg>
+          }
+          @case ('error') {
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M7 7l10 10M17 7L7 17" />
+            </svg>
+          }
+        }
+      </span>
+      <span class="pedido-timeline__texto">
+        <span class="pedido-timeline__label">{{ paso.label }}</span>
+        @if (paso.fecha) {
+          <span class="pedido-timeline__fecha">{{ paso.fecha | date: 'short' }}</span>
+        }
+      </span>
+    </li>
+  }
+</ol>

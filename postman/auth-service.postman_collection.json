@@ -1,0 +1,515 @@
+{
+  "info": {
+    "_postman_id": "3f7c1a90-1d2b-4e55-9a10-000000000002",
+    "name": "auth-service (8081)",
+    "description": "Identidad de la plataforma: JWT, usuarios de comercio, clientes y reseteo de contrasena.\n\nRequiere el environment 'Delivery Local'. Los logins guardan el token en la variable correspondiente (tokenRoot, tokenAdmin...), asi que las colecciones de los demas servicios funcionan sin copiar nada a mano.\n\nOrden sugerido: primero crea el comercio con la coleccion de comercio-service (deja comercioId en el environment), luego 'Provisionar ROOT' y 'Login ROOT'.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Plataforma",
+      "item": [
+        {
+          "name": "Provisionar ROOT del comercio",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Username unico en cada ejecucion: asi la coleccion se puede repetir sin 409",
+                  "pm.environment.set('rootUser', 'root.' + Date.now().toString().slice(-8));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created', () => pm.response.to.have.status(201));",
+                  "const u = pm.response.json();",
+                  "if (u.id) { pm.environment.set('rootUserId', u.id); }",
+                  "console.log('Mira los logs de auth-service: ahi aparece la URL de reseteo del correo de bienvenida.');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Platform-Key", "value": "{{platformKey}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"comercioId\": \"{{comercioId}}\",\n  \"username\": \"{{rootUser}}\",\n  \"password\": \"{{rootPass}}\",\n  \"mail\": \"root.demo@example.com\",\n  \"telefono\": \"600000000\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{authUrl}}/api/usuarios/root",
+              "host": ["{{authUrl}}"],
+              "path": ["api", "usuarios", "root"]
+            },
+            "description": "Solo la plataforma, con X-Platform-Key. El ROOT nace con mustChangePassword=true y se le envia por correo (mock: el log) una URL de reseteo.\n\nNecesita comercioId: crealo antes con la coleccion de comercio-service."
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Login",
+      "item": [
+        {
+          "name": "Login ROOT",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "const r = pm.response.json();",
+                  "pm.environment.set('tokenRoot', r.token);",
+                  "pm.test('Es ROOT', () => pm.expect(r.tipo).to.eql('ROOT'));",
+                  "if (r.mustChangePassword) { console.log('mustChangePassword=true: el frontal deberia forzar el cambio de contrasena.'); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{rootUser}}\",\n  \"password\": \"{{rootPass}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{authUrl}}/auth/login", "host": ["{{authUrl}}"], "path": ["auth", "login"] }
+          }
+        },
+        {
+          "name": "Login ADMIN",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('tokenAdmin', pm.response.json().token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{adminUser}}\",\n  \"password\": \"{{adminPass}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{authUrl}}/auth/login", "host": ["{{authUrl}}"], "path": ["auth", "login"] }
+          }
+        },
+        {
+          "name": "Login PERSONAL",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('tokenPersonal', pm.response.json().token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{personalUser}}\",\n  \"password\": \"{{personalPass}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{authUrl}}/auth/login", "host": ["{{authUrl}}"], "path": ["auth", "login"] }
+          }
+        },
+        {
+          "name": "Login REPARTIDOR",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('tokenRepartidor', pm.response.json().token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{repartidorUser}}\",\n  \"password\": \"{{repartidorPass}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{authUrl}}/auth/login", "host": ["{{authUrl}}"], "path": ["auth", "login"] }
+          }
+        },
+        {
+          "name": "Login CLIENTE",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "const r = pm.response.json();",
+                  "pm.environment.set('tokenCliente', r.token);",
+                  "pm.test('Es CLIENTE', () => pm.expect(r.tipo).to.eql('CLIENTE'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{clienteUser}}\",\n  \"password\": \"{{clientePass}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{authUrl}}/auth/login", "host": ["{{authUrl}}"], "path": ["auth", "login"] }
+          }
+        },
+        {
+          "name": "Login con credenciales malas (401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('401 Unauthorized', () => pm.response.to.have.status(401));"]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{rootUser}}\",\n  \"password\": \"esto-no-es\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{authUrl}}/auth/login", "host": ["{{authUrl}}"], "path": ["auth", "login"] }
+          }
+        },
+        {
+          "name": "Validar token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Token valido', () => pm.expect(pm.response.json().valid).to.be.true);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"{{tokenRoot}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{authUrl}}/auth/validate", "host": ["{{authUrl}}"], "path": ["auth", "validate"] },
+            "description": "Lo llaman los demas servicios en cada peticion con Bearer. Siempre responde 200: valid=true con los claims, o valid=false."
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Usuarios del comercio",
+      "item": [
+        {
+          "name": "Crear ADMIN (Bearer ROOT)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.environment.set('adminUser', 'admin.' + Date.now().toString().slice(-8));"]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('201 Created', () => pm.response.to.have.status(201));"]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{tokenRoot}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{adminUser}}\",\n  \"password\": \"{{adminPass}}\",\n  \"mail\": \"admin.demo@example.com\",\n  \"telefono\": \"600000001\",\n  \"tipo\": \"ADMIN\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{authUrl}}/api/usuarios", "host": ["{{authUrl}}"], "path": ["api", "usuarios"] },
+            "description": "El comercioId NUNCA viaja en el body: sale del token del creador."
+          }
+        },
+        {
+          "name": "Crear PERSONAL (Bearer ADMIN)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.environment.set('personalUser', 'personal.' + Date.now().toString().slice(-8));"]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('201 Created', () => pm.response.to.have.status(201));"]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{tokenAdmin}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{personalUser}}\",\n  \"password\": \"{{personalPass}}\",\n  \"mail\": \"personal.demo@example.com\",\n  \"telefono\": \"600000002\",\n  \"tipo\": \"PERSONAL\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{authUrl}}/api/usuarios", "host": ["{{authUrl}}"], "path": ["api", "usuarios"] }
+          }
+        },
+        {
+          "name": "Crear REPARTIDOR (Bearer ADMIN)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.environment.set('repartidorUser', 'repartidor.' + Date.now().toString().slice(-8));"]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('201 Created', () => pm.response.to.have.status(201));"]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{tokenAdmin}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{repartidorUser}}\",\n  \"password\": \"{{repartidorPass}}\",\n  \"mail\": \"repartidor.demo@example.com\",\n  \"telefono\": \"600000003\",\n  \"tipo\": \"REPARTIDOR\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{authUrl}}/api/usuarios", "host": ["{{authUrl}}"], "path": ["api", "usuarios"] }
+          }
+        },
+        {
+          "name": "ADMIN intenta crear un ADMIN (403)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('403 Forbidden', () => pm.response.to.have.status(403));",
+                  "// Un ADMIN solo puede crear PERSONAL y REPARTIDOR"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{tokenAdmin}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"otro.admin\",\n  \"password\": \"Admin-1234\",\n  \"mail\": \"otro.admin@example.com\",\n  \"tipo\": \"ADMIN\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{authUrl}}/api/usuarios", "host": ["{{authUrl}}"], "path": ["api", "usuarios"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Clientes",
+      "item": [
+        {
+          "name": "Registro de cliente",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const sufijo = Date.now().toString().slice(-8);",
+                  "pm.environment.set('clienteUser', 'cliente.' + sufijo);",
+                  "pm.environment.set('clienteMail', 'cliente.' + sufijo + '@example.com');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created', () => pm.response.to.have.status(201));",
+                  "const c = pm.response.json();",
+                  "if (c.id) { pm.environment.set('clienteId', c.id); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"comercioId\": \"{{comercioId}}\",\n  \"username\": \"{{clienteUser}}\",\n  \"password\": \"{{clientePass}}\",\n  \"mail\": \"{{clienteMail}}\",\n  \"direccionDomicilio\": \"Calle Mayor 1, 3B\",\n  \"telefono\": \"600111222\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{authUrl}}/api/clientes/registro",
+              "host": ["{{authUrl}}"],
+              "path": ["api", "clientes", "registro"]
+            },
+            "description": "Publico: el cliente se da de alta solo, pero atado a un comercio (cada web se vende a un unico comercio). comercioId es obligatorio: crea el comercio antes con la coleccion de comercio-service."
+          }
+        },
+        {
+          "name": "Actualizar mis datos de contacto",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('200 OK', () => pm.response.to.have.status(200));"]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{tokenCliente}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mail\": \"{{clienteMail}}\",\n  \"direccionDomicilio\": \"Avenida Nueva 42, 1A\",\n  \"telefono\": \"600333444\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{authUrl}}/api/clientes/me/contacto",
+              "host": ["{{authUrl}}"],
+              "path": ["api", "clientes", "me", "contacto"]
+            },
+            "description": "Solo se actualizan los campos informados: manda solo los que quieras cambiar."
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Contrasena olvidada",
+      "item": [
+        {
+          "name": "Solicitar reseteo",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('204 No Content', () => pm.response.to.have.status(204));",
+                  "console.log('Copia el token de la URL que aparece en los logs de auth-service a la variable resetToken.');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mail\": \"{{clienteMail}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{authUrl}}/auth/password/forgot",
+              "host": ["{{authUrl}}"],
+              "path": ["auth", "password", "forgot"]
+            },
+            "description": "Responde 204 exista o no el correo: si distinguiera, cualquiera podria enumerar las cuentas.\n\nEl correo es un mock (LoggingEmailAdapter): la URL con el token sale en el log del servicio."
+          }
+        },
+        {
+          "name": "Fijar nueva contrasena",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('204 No Content', () => pm.response.to.have.status(204));",
+                  "// El token es de un solo uso: repetir esta peticion da 400"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"{{resetToken}}\",\n  \"nuevaPassword\": \"Nueva-1234\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{authUrl}}/auth/password/reset",
+              "host": ["{{authUrl}}"],
+              "path": ["auth", "password", "reset"]
+            },
+            "description": "Pega en la variable resetToken el token de la URL del log. Un solo uso y con caducidad (30 min por defecto): 400 si ya se uso o expiro."
+          }
+        }
+      ]
+    }
+  ]
+}
