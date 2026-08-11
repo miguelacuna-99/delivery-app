@@ -1,0 +1,2 @@
+export const PEDIDOS_POLLING_MS = 9000;
+export const NOTIFICACIONES_POLLING_MS = 15000;

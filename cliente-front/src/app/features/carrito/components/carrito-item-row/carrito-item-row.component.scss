@@ -1,0 +1,88 @@
+.carrito-item-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--color-border);
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.carrito-item-row__avatar {
+  width: 2.5rem;
+  height: 2.5rem;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.carrito-item-row__info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.carrito-item-row__nombre {
+  font-weight: 600;
+  color: var(--color-ink-950);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.carrito-item-row__precio {
+  font-size: 0.8rem;
+  color: var(--color-ink-600);
+}
+
+.carrito-item-row__cantidad {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+
+  ui-button {
+    --ui-button-padding: 0.4rem;
+    --ui-button-gap: 0;
+
+    svg {
+      width: 0.85rem;
+      height: 0.85rem;
+    }
+  }
+}
+
+.carrito-item-row__cantidad-valor {
+  min-width: 1.4rem;
+  text-align: center;
+  font-weight: 600;
+}
+
+.carrito-item-row__subtotal {
+  font-weight: 700;
+  min-width: 4.5rem;
+  text-align: right;
+  color: var(--color-ink-950);
+}
+
+.carrito-item-row__quitar {
+  --ui-button-padding: 0.4rem 0.75rem;
+  --ui-button-font-size: 0.8rem;
+
+  svg {
+    width: 0.85rem;
+    height: 0.85rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .carrito-item-row {
+    flex-wrap: wrap;
+  }
+
+  .carrito-item-row__subtotal {
+    order: 4;
+    margin-left: calc(2.5rem + var(--space-4));
+  }
+}

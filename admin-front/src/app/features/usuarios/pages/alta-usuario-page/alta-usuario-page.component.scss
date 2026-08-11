@@ -1,0 +1,16 @@
+.alta-usuario-page__tipo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin-bottom: var(--space-3);
+
+  label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--color-ink-600);
+  }
+
+  .filter-select {
+    width: 100%;
+  }
+}

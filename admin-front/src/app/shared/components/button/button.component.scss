@@ -1,0 +1,104 @@
+.app-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1.1rem;
+  border-radius: var(--radius-full);
+  border: 1px solid transparent;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+  transition:
+    transform var(--duration-fast) var(--ease-standard),
+    box-shadow var(--duration-fast) var(--ease-standard),
+    background-color var(--duration-fast) var(--ease-standard),
+    border-color var(--duration-fast) var(--ease-standard);
+
+  &:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+  }
+
+  &:active:not(:disabled) {
+    transform: scale(0.97) translateY(0);
+    box-shadow: none;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+  }
+
+  &--primary {
+    background: var(--color-blue-600);
+    color: #fff;
+
+    &:hover:not(:disabled) {
+      background: var(--color-blue-700);
+    }
+  }
+
+  &--secondary {
+    background: var(--color-yellow-400);
+    color: var(--color-ink-950);
+
+    &:hover:not(:disabled) {
+      box-shadow: var(--shadow-yellow);
+    }
+  }
+
+  &--danger {
+    background: var(--color-danger);
+    color: #fff;
+  }
+
+  &--ghost {
+    background: transparent;
+    border-color: var(--color-border);
+    color: var(--color-ink-950);
+
+    &:hover:not(:disabled) {
+      background: var(--color-surface-alt);
+      box-shadow: none;
+    }
+  }
+}
+
+.app-button__spinner {
+  width: 0.85rem;
+  height: 0.85rem;
+  flex: none;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  display: inline-block;
+  animation: app-button-spin 0.6s linear infinite;
+}
+
+.app-button__label {
+  display: inline-flex;
+  align-items: center;
+}
+
+@keyframes app-button-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-button {
+    transition: none;
+
+    &:hover:not(:disabled),
+    &:active:not(:disabled) {
+      transform: none;
+    }
+  }
+}

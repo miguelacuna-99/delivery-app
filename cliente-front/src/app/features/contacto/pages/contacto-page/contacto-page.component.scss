@@ -1,0 +1,28 @@
+.contacto-page {
+  display: block;
+  max-width: 420px;
+  margin: 0 auto;
+
+  form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    margin-top: var(--space-4);
+  }
+
+  p {
+    color: var(--color-ink-600);
+    font-size: 0.9rem;
+  }
+}
+
+.contacto-page__submit {
+  --ui-button-width: 100%;
+  margin-top: var(--space-1);
+}
+
+.contacto-page__error {
+  color: var(--color-danger);
+  font-size: 0.85rem;
+  margin: 0;
+}

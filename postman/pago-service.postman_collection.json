@@ -1,0 +1,227 @@
+{
+  "info": {
+    "_postman_id": "3f7c1a90-1d2b-4e55-9a10-000000000007",
+    "name": "pago-service (8084) — via RabbitMQ",
+    "description": "pago-service **no expone API REST**: es puramente dirigido por eventos. Esta coleccion habla con la **API de gestion de RabbitMQ** (puerto 15672) para publicarle mensajes y para inspeccionar las colas.\n\nAutenticacion basica admin/admin a nivel de coleccion (variables rabbitUser y rabbitPass).\n\nLa cabecera `__TypeId__` no es decorativa: es lo que el conversor de Jackson usa para saber que tipo esta recibiendo. Si falta o esta mal, el mensaje se descarta.\n\nPara que el recorrido end-to-end no se tuerza por azar, arranca pago-service con PAGO_MOCK_PROBABILIDAD_EXITO=1 (por defecto deniega ~10% de los cobros).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "basic",
+    "basic": [
+      { "key": "username", "value": "{{rabbitUser}}", "type": "string" },
+      { "key": "password", "value": "{{rabbitPass}}", "type": "string" }
+    ]
+  },
+  "item": [
+    {
+      "name": "1. Disparar un cobro (pago.solicitado)",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// Por defecto usa un pedido sintetico, para probar pago-service aislado.",
+              "// Si quieres usar el pedido real del flujo, cambia esta linea por:",
+              "//   const pedidoId = pm.environment.get('pedidoId');",
+              "const pedidoId = 'pedido-demo-' + Date.now().toString().slice(-8);",
+              "pm.environment.set('pedidoIdPublicado', pedidoId);",
+              "",
+              "const evento = {",
+              "  routingKey: 'pago.solicitado',",
+              "  pedidoId: pedidoId,",
+              "  numeroPedido: 'DEMO01',",
+              "  comercioId: pm.environment.get('comercioId') || 'comercio-demo',",
+              "  clienteId: pm.environment.get('clienteId') || 'cliente-demo',",
+              "  total: 18.80,",
+              "  estado: 'ACEPTADO',",
+              "  timestamp: new Date().toISOString()",
+              "};",
+              "",
+              "// Doble stringify: el payload viaja como cadena dentro del JSON de la API",
+              "pm.variables.set('payload', JSON.stringify(JSON.stringify(evento)));"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200 OK', () => pm.response.to.have.status(200));",
+              "pm.test('Encolado (routed)', () => pm.expect(pm.response.json().routed).to.be.true);",
+              "console.log('Publicado para ' + pm.environment.get('pedidoIdPublicado'));",
+              "console.log('Mira los logs de pago-service: dira AUTORIZADO o DENEGADO y publicara pago.completado o pago.fallido.');"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"properties\": {\n    \"content_type\": \"application/json\",\n    \"headers\": {\n      \"__TypeId__\": \"es.delivery.manager.contracts.event.PedidoEventMessage\"\n    }\n  },\n  \"routing_key\": \"pago.solicitado\",\n  \"payload\": {{payload}},\n  \"payload_encoding\": \"string\"\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": {
+          "raw": "{{rabbitUrl}}/api/exchanges/%2F/delivery.exchange/publish",
+          "host": ["{{rabbitUrl}}"],
+          "path": ["api", "exchanges", "%2F", "delivery.exchange", "publish"]
+        },
+        "description": "Simula lo que publica pedido-service al aceptar un pedido. pago-service cobra el campo `total`.\n\nSi la respuesta trae routed=false, el mensaje no encontro cola: comprueba que pago-service esta arrancado (es quien declara sus colas y bindings al iniciar)."
+      }
+    },
+    {
+      "name": "2. Pedir una devolucion (devolucion.solicitada)",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// Debe ser un pedido con un pago COMPLETADO: si no, pago-service lo ignora con un warning",
+              "const pedidoId = pm.environment.get('pedidoIdPublicado') || pm.environment.get('pedidoId');",
+              "",
+              "const evento = {",
+              "  routingKey: 'devolucion.solicitada',",
+              "  pedidoId: pedidoId,",
+              "  comercioId: pm.environment.get('comercioId') || 'comercio-demo',",
+              "  clienteId: pm.environment.get('clienteId') || 'cliente-demo',",
+              "  estado: 'PENDIENTE_DEVOLUCION',",
+              "  timestamp: new Date().toISOString()",
+              "};",
+              "",
+              "pm.variables.set('payload', JSON.stringify(JSON.stringify(evento)));"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200 OK', () => pm.response.to.have.status(200));",
+              "console.log('Si el pago estaba COMPLETADO pasara a DEVUELTO y publicara devolucion.completada.');",
+              "console.log('Si no existe o no estaba completado, veras un warning en el log y no se publica nada.');"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"properties\": {\n    \"content_type\": \"application/json\",\n    \"headers\": {\n      \"__TypeId__\": \"es.delivery.manager.contracts.event.PedidoEventMessage\"\n    }\n  },\n  \"routing_key\": \"devolucion.solicitada\",\n  \"payload\": {{payload}},\n  \"payload_encoding\": \"string\"\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": {
+          "raw": "{{rabbitUrl}}/api/exchanges/%2F/delivery.exchange/publish",
+          "host": ["{{rabbitUrl}}"],
+          "path": ["api", "exchanges", "%2F", "delivery.exchange", "publish"]
+        },
+        "description": "Simula lo que publica pedido-service cuando el comercio anula un pedido pagado."
+      }
+    },
+    {
+      "name": "3. Forzar un cobro denegado",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// No hay forma de forzar el fallo desde el mensaje: la pasarela decide al azar.",
+              "// Para provocarlo, arranca pago-service con PAGO_MOCK_PROBABILIDAD_EXITO=0",
+              "// y lanza esta peticion.",
+              "const evento = {",
+              "  routingKey: 'pago.solicitado',",
+              "  pedidoId: 'pedido-fallo-' + Date.now().toString().slice(-8),",
+              "  comercioId: pm.environment.get('comercioId') || 'comercio-demo',",
+              "  clienteId: pm.environment.get('clienteId') || 'cliente-demo',",
+              "  total: 25.00,",
+              "  estado: 'ACEPTADO',",
+              "  timestamp: new Date().toISOString()",
+              "};",
+              "pm.variables.set('payload', JSON.stringify(JSON.stringify(evento)));"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": ["pm.test('200 OK', () => pm.response.to.have.status(200));"]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"properties\": {\n    \"content_type\": \"application/json\",\n    \"headers\": {\n      \"__TypeId__\": \"es.delivery.manager.contracts.event.PedidoEventMessage\"\n    }\n  },\n  \"routing_key\": \"pago.solicitado\",\n  \"payload\": {{payload}},\n  \"payload_encoding\": \"string\"\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": {
+          "raw": "{{rabbitUrl}}/api/exchanges/%2F/delivery.exchange/publish",
+          "host": ["{{rabbitUrl}}"],
+          "path": ["api", "exchanges", "%2F", "delivery.exchange", "publish"]
+        },
+        "description": "Con PAGO_MOCK_PROBABILIDAD_EXITO=0 esta peticion produce siempre pago.fallido, que lleva el pedido a CANCELADO y devuelve los puntos reservados."
+      }
+    },
+    {
+      "name": "4. Ver todas las colas",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200 OK', () => pm.response.to.have.status(200));",
+              "pm.response.json().forEach(q => console.log(q.name + ': ' + q.messages + ' mensaje(s), ' + q.consumers + ' consumidor(es)'));",
+              "console.log('Mensajes acumulados con 0 consumidores = ese servicio no esta arrancado.');"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{rabbitUrl}}/api/queues/%2F",
+          "host": ["{{rabbitUrl}}"],
+          "path": ["api", "queues", "%2F"]
+        },
+        "description": "Radiografia rapida del sistema: si una cola acumula mensajes es que su consumidor no esta escuchando."
+      }
+    },
+    {
+      "name": "5. Ver los bindings del exchange",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200 OK', () => pm.response.to.have.status(200));",
+              "pm.response.json().forEach(b => console.log(b.routing_key + '  ->  ' + b.destination));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{rabbitUrl}}/api/exchanges/%2F/delivery.exchange/bindings/source",
+          "host": ["{{rabbitUrl}}"],
+          "path": ["api", "exchanges", "%2F", "delivery.exchange", "bindings", "source"]
+        },
+        "description": "Quien escucha que. Util para comprobar de un vistazo que ninguna cola de resultados de pago esta enlazada al wildcard pago.* (mezclaria dos tipos de mensaje y fallaria al deserializar)."
+      }
+    }
+  ]
+}

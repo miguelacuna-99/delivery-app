@@ -1,0 +1,33 @@
+server:
+  port: 8085
+
+spring:
+  application:
+    name: fidelidad-service
+
+  data:
+    mongodb:
+      uri: mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@${MONGO_HOST:localhost}:${MONGO_PORT:27017}/fidelidad_db?authSource=admin
+
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME}
+    password: ${RABBITMQ_PASSWORD}
+
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+
+auth:
+  service:
+    url: ${AUTH_SERVICE_URL:http://localhost:8081}
+
+service:
+  # Clave compartida que exigen los endpoints internos (X-Service-Key).
+  # Debe coincidir con la que usa pedido-service.
+  api-key: ${SERVICE_API_KEY:dev-service-key-cambiar}
+
+logging:
+  level:
+    es.delivery.manager.fidelidad: DEBUG

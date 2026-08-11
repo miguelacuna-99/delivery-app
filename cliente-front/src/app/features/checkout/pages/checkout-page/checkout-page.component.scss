@@ -1,0 +1,52 @@
+.checkout-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  max-width: 420px;
+  margin: 0 auto;
+  gap: var(--space-3);
+
+  h1 {
+    margin-bottom: 0;
+  }
+
+  p {
+    color: var(--color-ink-600);
+  }
+
+  a {
+    font-size: 0.85rem;
+  }
+}
+
+.checkout-page__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: var(--radius-full);
+  background-color: var(--color-blue-100);
+  color: var(--color-blue-700);
+  margin-bottom: var(--space-2);
+
+  svg {
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+}
+
+.checkout-page__error {
+  width: 100%;
+  color: var(--color-danger);
+  background-color: var(--color-danger-bg);
+  border-radius: var(--radius-sm);
+  padding: var(--space-3) var(--space-4);
+  font-size: 0.88rem;
+}
+
+.checkout-page__cta {
+  --ui-button-width: 100%;
+  margin-top: var(--space-2);
+}

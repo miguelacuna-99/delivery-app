@@ -1,0 +1,466 @@
+{
+  "info": {
+    "_postman_id": "3f7c1a90-1d2b-4e55-9a10-000000000004",
+    "name": "pedido-service (8083)",
+    "description": "Carrito, checkout y maquina de estados del pedido.\n\nAntes de usarla necesitas: comercioId y productoId (coleccion de comercio-service) y los tokens de cliente, personal y repartidor (coleccion de auth-service).\n\nLo que mas sorprende: **no hay endpoint de pagar**. El cobro lo dispara la aceptacion del comercio — al aceptar, pedido-service publica pago.solicitado y el pedido pasa solo a PAGADO cuando responde la pasarela.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Carrito (CLIENTE)",
+      "item": [
+        {
+          "name": "Ver mi carrito",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "// Si no hay carrito devuelve uno vacio, no 404"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{tokenCliente}}" }],
+            "url": { "raw": "{{pedidoUrl}}/api/carrito", "host": ["{{pedidoUrl}}"], "path": ["api", "carrito"] }
+          }
+        },
+        {
+          "name": "Poner productos en el carrito",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Es mi carrito', () => pm.expect(pm.response.json().clienteId).to.be.a('string'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{tokenCliente}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"comercioId\": \"{{comercioId}}\",\n  \"items\": [\n    {\n      \"productoId\": \"{{productoId}}\",\n      \"nombre\": \"Pizza Margarita\",\n      \"precio\": {{productoPrecio}},\n      \"cantidad\": 2\n    }\n  ],\n  \"codigoCupon\": null,\n  \"puntosAplicados\": 0\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{pedidoUrl}}/api/carrito", "host": ["{{pedidoUrl}}"], "path": ["api", "carrito"] },
+            "description": "Reemplaza el carrito entero. Un carrito es siempre de un unico comercio.\n\nAviso: hoy el precio lo manda el cliente y no se revalida contra el catalogo (ver limitaciones conocidas en docs/DISENO.md)."
+          }
+        },
+        {
+          "name": "Carrito con cupon y puntos",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('200 OK', () => pm.response.to.have.status(200));"]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{tokenCliente}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"comercioId\": \"{{comercioId}}\",\n  \"items\": [\n    {\n      \"productoId\": \"{{productoId}}\",\n      \"nombre\": \"Pizza Margarita\",\n      \"precio\": {{productoPrecio}},\n      \"cantidad\": 2\n    }\n  ],\n  \"codigoCupon\": \"{{codigoCupon}}\",\n  \"puntosAplicados\": 100\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{pedidoUrl}}/api/carrito", "host": ["{{pedidoUrl}}"], "path": ["api", "carrito"] },
+            "description": "El cupon y los puntos se validan en el checkout, no aqui: aqui solo se guardan.\n\n100 puntos = 1,00 EUR de descuento. Si el cliente no tiene saldo, el checkout dara 400."
+          }
+        },
+        {
+          "name": "Carrito con un precio manipulado (paso 1 de 2)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "console.log('El carrito acepta cualquier precio: la comprobacion es en el checkout. Lanza ahora la peticion siguiente.');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{tokenCliente}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"comercioId\": \"{{comercioId}}\",\n  \"items\": [\n    {\n      \"productoId\": \"{{productoId}}\",\n      \"nombre\": \"Pizza Margarita\",\n      \"precio\": 0.01,\n      \"cantidad\": 1\n    }\n  ],\n  \"puntosAplicados\": 0\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{pedidoUrl}}/api/carrito", "host": ["{{pedidoUrl}}"], "path": ["api", "carrito"] },
+            "description": "Guarda en el carrito un precio de 0,01 EUR para un producto que cuesta mas. El carrito no valida nada; quien valida es el checkout."
+          }
+        },
+        {
+          "name": "Checkout con precio manipulado (409) (paso 2 de 2)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('409 Conflict', () => pm.response.to.have.status(409));",
+                  "console.log(pm.response.json().error);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{tokenCliente}}" }],
+            "url": {
+              "raw": "{{pedidoUrl}}/api/carrito/checkout",
+              "host": ["{{pedidoUrl}}"],
+              "path": ["api", "carrito", "checkout"]
+            },
+            "description": "El checkout pide el catalogo a comercio-service y compara: si el precio no coincide con el vigente, rechaza con 409 en vez de cobrar un importe que el cliente no ha visto.\n\nEl nombre y el precio del pedido salen siempre del catalogo, nunca del carrito."
+          }
+        },
+        {
+          "name": "Vaciar carrito",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('204 No Content', () => pm.response.to.have.status(204));"]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{tokenCliente}}" }],
+            "url": { "raw": "{{pedidoUrl}}/api/carrito", "host": ["{{pedidoUrl}}"], "path": ["api", "carrito"] }
+          }
+        },
+        {
+          "name": "Checkout (crea el pedido)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created', () => pm.response.to.have.status(201));",
+                  "const p = pm.response.json();",
+                  "pm.environment.set('pedidoId', p.id);",
+                  "pm.environment.set('numeroPedido', p.numeroPedido);",
+                  "pm.test('Nace PENDIENTE', () => pm.expect(p.estado).to.eql('PENDIENTE'));",
+                  "console.log('pedidoId = ' + p.id + ' | numeroPedido = ' + p.numeroPedido + ' | total = ' + p.total);",
+                  "console.log('El numeroPedido solo lo recibe el cliente: es lo que dictara al repartidor.');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{tokenCliente}}" }],
+            "url": {
+              "raw": "{{pedidoUrl}}/api/carrito/checkout",
+              "host": ["{{pedidoUrl}}"],
+              "path": ["api", "carrito", "checkout"]
+            },
+            "description": "Valida cupon y puntos contra fidelidad-service, calcula importes, genera el numeroPedido, vacia el carrito y publica pedido.creado.\n\n400 si el carrito esta vacio, el cupon no es usable o faltan puntos."
+          }
+        },
+        {
+          "name": "Checkout con el carrito vacio (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('400 Bad Request', () => pm.response.to.have.status(400));"]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{tokenCliente}}" }],
+            "url": {
+              "raw": "{{pedidoUrl}}/api/carrito/checkout",
+              "host": ["{{pedidoUrl}}"],
+              "path": ["api", "carrito", "checkout"]
+            },
+            "description": "Lanzalo justo despues de 'Vaciar carrito' o de un checkout, que deja el carrito vacio."
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Consultas",
+      "item": [
+        {
+          "name": "Mis pedidos (CLIENTE)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{tokenCliente}}" }],
+            "url": { "raw": "{{pedidoUrl}}/api/pedidos/me", "host": ["{{pedidoUrl}}"], "path": ["api", "pedidos", "me"] }
+          }
+        },
+        {
+          "name": "Pedidos del comercio por estado",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "const lista = pm.response.json();",
+                  "console.log(lista.length + ' pedido(s) en ese estado');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{tokenPersonal}}" }],
+            "url": {
+              "raw": "{{pedidoUrl}}/api/pedidos?estado=PENDIENTE",
+              "host": ["{{pedidoUrl}}"],
+              "path": ["api", "pedidos"],
+              "query": [
+                {
+                  "key": "estado",
+                  "value": "PENDIENTE",
+                  "description": "PENDIENTE | ACEPTADO | RECHAZADO | PAGADO | ENTREGADO | CANCELADO | PENDIENTE_DEVOLUCION | DEVUELTO"
+                }
+              ]
+            },
+            "description": "Filtra siempre por el comercioId del token: un comercio no ve pedidos de otro."
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Decision del comercio",
+      "item": [
+        {
+          "name": "Aceptar pedido (dispara el cobro)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Queda ACEPTADO', () => pm.expect(pm.response.json().estado).to.eql('ACEPTADO'));",
+                  "console.log('Se han publicado pedido.aceptado y pago.solicitado.');",
+                  "console.log('En un segundo deberia estar PAGADO (o CANCELADO si la pasarela mock deniega). Vuelve a consultarlo.');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{tokenPersonal}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tiempoEstimadoMin\": 30\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{pedidoUrl}}/api/pedidos/{{pedidoId}}/aceptar",
+              "host": ["{{pedidoUrl}}"],
+              "path": ["api", "pedidos", "{{pedidoId}}", "aceptar"]
+            }
+          }
+        },
+        {
+          "name": "Aceptar dos veces (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('400 Bad Request', () => pm.response.to.have.status(400));",
+                  "// La maquina de estados solo acepta pedidos PENDIENTE"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{tokenPersonal}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tiempoEstimadoMin\": 30\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{pedidoUrl}}/api/pedidos/{{pedidoId}}/aceptar",
+              "host": ["{{pedidoUrl}}"],
+              "path": ["api", "pedidos", "{{pedidoId}}", "aceptar"]
+            }
+          }
+        },
+        {
+          "name": "Rechazar pedido",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Queda RECHAZADO', () => pm.expect(pm.response.json().estado).to.eql('RECHAZADO'));",
+                  "console.log('Publica pedido.rechazado: fidelidad devuelve los puntos y el uso del cupon.');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{tokenPersonal}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mensaje\": \"Sin stock de mozzarella, disculpa\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{pedidoUrl}}/api/pedidos/{{pedidoId}}/rechazar",
+              "host": ["{{pedidoUrl}}"],
+              "path": ["api", "pedidos", "{{pedidoId}}", "rechazar"]
+            },
+            "description": "Necesita otro pedido en PENDIENTE: haz un checkout nuevo antes de probarlo."
+          }
+        },
+        {
+          "name": "Anular pedido pagado (devolucion)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Queda PENDIENTE_DEVOLUCION', () => pm.expect(pm.response.json().estado).to.eql('PENDIENTE_DEVOLUCION'));",
+                  "console.log('Publica devolucion.solicitada. Cuando el banco mock responda quedara DEVUELTO.');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{tokenAdmin}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"motivo\": \"El cliente reclama, no se pudo servir\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{pedidoUrl}}/api/pedidos/{{pedidoId}}/anular",
+              "host": ["{{pedidoUrl}}"],
+              "path": ["api", "pedidos", "{{pedidoId}}", "anular"]
+            },
+            "description": "Solo sobre pedidos PAGADO, y solo ROOT o ADMIN: anular algo ya cobrado es decision de negocio."
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Entrega (REPARTIDOR)",
+      "item": [
+        {
+          "name": "Entregar con el numeroPedido",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Queda ENTREGADO', () => pm.expect(pm.response.json().estado).to.eql('ENTREGADO'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{tokenRepartidor}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"numeroPedido\": \"{{numeroPedido}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{pedidoUrl}}/api/pedidos/entregar",
+              "host": ["{{pedidoUrl}}"],
+              "path": ["api", "pedidos", "entregar"]
+            },
+            "description": "El repartidor introduce el codigo que le dicta el cliente. Solo funciona si el pedido esta PAGADO: si sigue en ACEPTADO, la pasarela aun no ha respondido (o denego)."
+          }
+        },
+        {
+          "name": "PERSONAL intenta entregar (403)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('403 Forbidden', () => pm.response.to.have.status(403));"]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{tokenPersonal}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"numeroPedido\": \"{{numeroPedido}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{pedidoUrl}}/api/pedidos/entregar",
+              "host": ["{{pedidoUrl}}"],
+              "path": ["api", "pedidos", "entregar"]
+            },
+            "description": "Registrar la entrega es exclusivo del REPARTIDOR."
+          }
+        }
+      ]
+    }
+  ]
+}

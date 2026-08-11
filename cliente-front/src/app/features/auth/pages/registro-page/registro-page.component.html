@@ -1,0 +1,21 @@
+<ui-card class="registro-page">
+  <h1>Crear cuenta</h1>
+
+  <form (ngSubmit)="submit()">
+    <ui-input label="Usuario" [value]="username()" (valueChange)="username.set($event)" />
+    <ui-input label="Contraseña" type="password" [value]="password()" (valueChange)="password.set($event)" />
+    <ui-input label="Correo" type="email" [value]="mail()" (valueChange)="mail.set($event)" />
+    <ui-input label="Direccion de entrega" [value]="direccionDomicilio()" (valueChange)="direccionDomicilio.set($event)" />
+    <ui-input label="Telefono" [value]="telefono()" (valueChange)="telefono.set($event)" />
+
+    @if (errorMessage()) {
+      <p class="registro-page__error">{{ errorMessage() }}</p>
+    }
+
+    <ui-button class="registro-page__submit" type="submit" [loading]="loading()">Registrarme</ui-button>
+  </form>
+
+  <div class="registro-page__links">
+    <a routerLink="/login">Ya tengo cuenta</a>
+  </div>
+</ui-card>

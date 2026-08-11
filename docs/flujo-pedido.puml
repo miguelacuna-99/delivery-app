@@ -1,0 +1,103 @@
+@startuml flujo-pedido
+title Delivery App - Flujo completo del pedido
+
+actor Cliente
+actor Comercio
+actor Repartidor
+participant "pedido-service" as PED
+participant "comercio-service" as COM
+participant "fidelidad-service" as FID
+participant "pago-service (mock)" as PAG
+participant "notificacion-service" as NOT
+queue "RabbitMQ" as MQ
+
+== Carrito ==
+Cliente -> COM : GET catalogo del comercio
+Cliente -> PED : PUT /api/carrito\n(items, cupon, puntos)
+
+== Checkout: creacion del pedido ==
+Cliente -> PED : POST /api/carrito/checkout
+PED -> COM : GET catalogo del comercio
+COM --> PED : precios y disponibilidad vigentes
+PED -> PED : Reconstruir items con el precio\ndel catalogo (409 si no coincide),\ncomprobar que el comercio esta operativo
+PED -> FID : GET validar cupon\n+ saldo de puntos (X-Service-Key)
+FID --> PED : % descuento / saldo
+PED -> PED : Calcular importes,\ncrear Pedido (PENDIENTE),\ngenerar numeroPedido,\nvaciar carrito
+PED -> MQ : pedido.creado
+MQ -> NOT : pedido.creado
+NOT -> Comercio : Notificacion PEDIDOS PENDIENTES
+MQ -> FID : pedido.creado
+FID -> FID : Reservar: descontar puntos\ny contar uso del cupon
+PED --> Cliente : id + numeroPedido (seguimiento)
+
+== Decision del comercio ==
+alt Comercio acepta
+  Comercio -> PED : POST /{id}/aceptar (tiempoEstimadoMin)
+  PED -> PED : Estado = ACEPTADO
+  PED -> MQ : pedido.aceptado
+  MQ -> FID : pedido.aceptado
+  FID -> FID : Consolidar la reserva\n(ya aplicada al crear:\nsin efecto economico)
+else Comercio rechaza
+  Comercio -> PED : POST /{id}/rechazar (mensaje opcional)
+  PED -> PED : Estado = RECHAZADO
+  PED -> MQ : pedido.rechazado
+  MQ -> FID : pedido.rechazado
+  FID -> FID : Devolver puntos\ny uso de cupon
+end
+
+== Cobro (pasarela mock) ==
+note over PED, PAG
+  El cobro lo dispara la aceptacion del comercio,
+  no una accion del cliente: al aceptar, pedido-service
+  publica pago.solicitado.
+end note
+PED -> MQ : pago.solicitado (al aceptar)
+MQ -> PAG : pago.solicitado
+PAG -> PAG : Simular pasarela de firma\n(probabilidad-exito configurable)
+
+alt Pago correcto
+  PAG -> MQ : pago.completado
+  MQ -> PED : pago.completado
+  PED -> PED : Estado = PAGADO
+  MQ -> NOT : pago.completado
+  NOT -> Comercio : Notificacion PEDIDOS PAGADOS
+  MQ -> FID : pago.completado
+  FID -> FID : Otorgar puntos\nsegun importe gastado
+else Pago fallido o plazo de pago vencido
+  PAG -> MQ : pago.fallido
+  MQ -> PED : pago.fallido
+  PED -> PED : Estado = CANCELADO
+  PED -> MQ : pedido.cancelado\n(lleva cupon y puntos)
+  MQ -> FID : pedido.cancelado
+  FID -> FID : Devolver puntos\ny uso del cupon
+end
+
+== Anulacion tras el pago (devolucion) ==
+opt Comercio anula un pedido PAGADO
+  Comercio -> PED : Anular pedido (motivo)
+  PED -> PED : Estado = PENDIENTE_DEVOLUCION\n(fechaAnulacion)
+  PED -> MQ : devolucion.solicitada
+  MQ -> PAG : devolucion.solicitada
+  PAG -> PAG : Simular devolucion del banco\n(Pago -> DEVUELTO)
+  PAG -> MQ : devolucion.completada
+  MQ -> PED : devolucion.completada
+  PED -> PED : Estado = DEVUELTO\n(fechaDevolucion)
+  MQ -> FID : devolucion.completada
+  FID -> FID : Retirar puntos otorgados\npor este pedido
+end
+
+== Plazo de pago vencido ==
+opt La pasarela nunca responde
+  PED -> PED : Barrido programado:\nACEPTADO con mas de N min\n-> CANCELADO
+  PED -> MQ : pedido.cancelado
+  MQ -> FID : pedido.cancelado
+  FID -> FID : Devolver puntos\ny uso del cupon
+end
+
+== Entrega ==
+Cliente -> Repartidor : Facilita numeroPedido\n(solo lo tiene el cliente)
+Repartidor -> PED : Registrar numeroPedido
+PED -> PED : Estado = ENTREGADO
+PED -> MQ : pedido.entregado
+
+@enduml

@@ -1,0 +1,47 @@
+server:
+  port: 8083
+
+spring:
+  application:
+    name: pedido-service
+
+  data:
+    mongodb:
+      uri: mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@${MONGO_HOST:localhost}:${MONGO_PORT:27017}/pedido_db?authSource=admin
+
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME}
+    password: ${RABBITMQ_PASSWORD}
+
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+
+auth:
+  service:
+    url: ${AUTH_SERVICE_URL:http://localhost:8081}
+
+comercio:
+  service:
+    url: ${COMERCIO_SERVICE_URL:http://localhost:8082}
+
+fidelidad:
+  service:
+    url: ${FIDELIDAD_SERVICE_URL:http://localhost:8085}
+
+pedido:
+  pago:
+    # Plazo que espera un pedido ACEPTADO a que responda la pasarela antes de cancelarse
+    timeout-min: ${PEDIDO_PAGO_TIMEOUT_MIN:15}
+    # Cada cuanto se barren los pedidos con el plazo vencido
+    timeout-check-ms: ${PEDIDO_PAGO_TIMEOUT_CHECK_MS:60000}
+
+service:
+  # Clave de servicio a servicio para los endpoints internos de fidelidad-service
+  api-key: ${SERVICE_API_KEY:dev-service-key-cambiar}
+
+logging:
+  level:
+    es.delivery.manager.pedido: DEBUG

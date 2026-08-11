@@ -1,0 +1,29 @@
+package es.delivery.manager.auth.infrastructure.repository;
+
+import es.delivery.manager.contracts.model.TipoUsuario;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.mapping.Document;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@Document(collection = "usuarios")
+public class UsuarioDocument {
+    @Id
+    private String id;
+    @Indexed
+    private String comercioId;
+    @Indexed(unique = true)
+    private String username;
+    private String passwordHash;
+    private String mail;
+    private String telefono;
+    private TipoUsuario tipo;
+    private boolean mustChangePassword;
+}

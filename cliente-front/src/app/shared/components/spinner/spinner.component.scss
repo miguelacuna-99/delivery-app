@@ -1,0 +1,24 @@
+.ui-spinner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  color: var(--color-ink-600);
+  padding: var(--space-6) var(--space-4);
+  justify-content: center;
+  font-size: 0.9rem;
+}
+
+.ui-spinner__circle {
+  width: 1.4rem;
+  height: 1.4rem;
+  border: 3px solid var(--color-border);
+  border-top-color: var(--color-blue-600);
+  border-radius: 50%;
+  animation: ui-spinner-spin 0.7s linear infinite;
+}
+
+@keyframes ui-spinner-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

@@ -1,0 +1,19 @@
+<ui-card
+  class="comercio-card"
+  role="button"
+  tabindex="0"
+  (click)="onSeleccionar()"
+  (keydown.enter)="onSeleccionar()"
+  (keydown.space)="onSeleccionar()"
+>
+  <span class="avatar-tile comercio-card__avatar" [class]="avatarClase()">{{ iniciales() }}</span>
+  <div class="comercio-card__body">
+    <h3>{{ comercio().nombre }}</h3>
+    @if (comercio().direccion) {
+      <p class="comercio-card__direccion">{{ comercio().direccion }}</p>
+    }
+    @if (comercio().telefono) {
+      <p class="comercio-card__telefono">{{ comercio().telefono }}</p>
+    }
+  </div>
+</ui-card>

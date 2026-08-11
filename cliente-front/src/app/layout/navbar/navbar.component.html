@@ -1,0 +1,36 @@
+<nav class="navbar">
+  <div class="navbar__brand" routerLink="/catalogo">
+    <span class="navbar__mark" aria-hidden="true">D</span>
+    DeliveryApp
+  </div>
+
+  <div class="navbar__links">
+    <a routerLink="/catalogo" routerLinkActive="navbar__link--active" class="navbar__link">Comercios</a>
+    <a routerLink="/carrito" routerLinkActive="navbar__link--active" class="navbar__link">Carrito</a>
+    <a routerLink="/pedidos" routerLinkActive="navbar__link--active" class="navbar__link">Mis pedidos</a>
+    <a routerLink="/puntos" routerLinkActive="navbar__link--active" class="navbar__link">Puntos</a>
+    <a routerLink="/contacto" routerLinkActive="navbar__link--active" class="navbar__link">Mis datos</a>
+  </div>
+
+  <div class="navbar__user">
+    @if (currentUser(); as user) {
+      <span class="navbar__username">{{ user.username }}</span>
+    }
+    @if (saldoPuntos(); as saldo) {
+      <span class="navbar__puntos">
+        <svg class="navbar__puntos-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 3.5l2.35 4.9 5.4.68-3.95 3.77.98 5.35L12 15.7l-4.78 2.5.98-5.35-3.95-3.77 5.4-.68L12 3.5z" />
+        </svg>
+        {{ saldo }} pts
+      </span>
+    }
+    <ui-button variant="ghost" (clicked)="logout()">
+      <svg class="navbar__logout-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M9 4H6a1.5 1.5 0 0 0-1.5 1.5v13A1.5 1.5 0 0 0 6 20h3" />
+        <path d="M14 16.5l4.5-4.5-4.5-4.5" />
+        <path d="M18.5 12h-10" />
+      </svg>
+      Salir
+    </ui-button>
+  </div>
+</nav>

@@ -1,0 +1,32 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: comercio-service
+
+  data:
+    mongodb:
+      uri: mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@${MONGO_HOST:localhost}:${MONGO_PORT:27017}/comercio_db?authSource=admin
+
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME}
+    password: ${RABBITMQ_PASSWORD}
+
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+
+auth:
+  service:
+    url: ${AUTH_SERVICE_URL:http://localhost:8081}
+
+platform:
+  # API key para operaciones de plataforma (alta de comercios, suscripciones). En produccion, variable de entorno.
+  api-key: ${PLATFORM_API_KEY:dev-platform-key-cambiar}
+
+logging:
+  level:
+    es.delivery.manager.comercio: DEBUG

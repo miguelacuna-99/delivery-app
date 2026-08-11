@@ -1,0 +1,238 @@
+/* You can add global styles to this file, and also import other style files */
+@use 'styles/tokens';
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background: var(--color-surface-alt);
+  color: var(--color-ink-950);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+h4,
+p {
+  margin: 0 0 var(--space-3);
+}
+
+a {
+  color: var(--color-blue-600);
+}
+
+::selection {
+  background: var(--color-blue-100);
+  color: var(--color-blue-700);
+}
+
+/* Foco de teclado visible y consistente en toda la app */
+:focus-visible {
+  outline: 2px solid var(--color-blue-600);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* ---------- Cabecera de página ---------- */
+.page-title {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--color-ink-950);
+  margin: 0 0 var(--space-4);
+}
+
+.page-subtitle {
+  color: var(--color-ink-600);
+  font-size: 0.9rem;
+  margin: 0 0 var(--space-4);
+}
+
+/* ---------- Barra de filtros ---------- */
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+  flex-wrap: wrap;
+
+  label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--color-ink-600);
+  }
+}
+
+.filter-select {
+  appearance: none;
+  background: var(--color-surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%234B5265' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") no-repeat right 10px center;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2) var(--space-6) var(--space-2) var(--space-3);
+  font-size: 0.85rem;
+  font-family: inherit;
+  color: var(--color-ink-950);
+  cursor: pointer;
+  transition: border-color var(--duration-fast) var(--ease-standard), box-shadow var(--duration-fast) var(--ease-standard);
+
+  &:hover {
+    border-color: var(--color-ink-300);
+  }
+
+  &:focus-visible {
+    border-color: var(--color-blue-600);
+    box-shadow: 0 0 0 3px var(--color-blue-100);
+  }
+}
+
+/* ---------- Tablas ---------- */
+.table-wrapper {
+  overflow-x: auto;
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+
+  th,
+  td {
+    text-align: left;
+    padding: var(--space-3) var(--space-4);
+    white-space: nowrap;
+  }
+
+  thead th {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--color-ink-600);
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  tbody tr {
+    border-bottom: 1px solid var(--color-border);
+    transition: background-color var(--duration-fast) var(--ease-standard);
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    &:hover {
+      background: var(--color-surface-alt);
+    }
+  }
+}
+
+/* ---------- Estados vacío / carga ---------- */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-8) var(--space-4);
+  color: var(--color-ink-600);
+  text-align: center;
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  border: 1px dashed var(--color-border);
+
+  svg {
+    color: var(--color-ink-300);
+  }
+
+  p {
+    margin: 0;
+    font-size: 0.9rem;
+  }
+}
+
+.loading-state {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-6) 0;
+}
+
+/* ---------- Pill de estado genérico (cupones, productos, etc.) ----------
+   Texto siempre en --color-ink-950: el texto saturado (success/danger) sobre
+   su propio fondo pastel no alcanza 4.5:1 (ver badge-estado-pedido), así que
+   el color semántico se comunica con el fondo + un punto de acento. */
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: var(--radius-full);
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--color-ink-950);
+
+  &::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex: none;
+  }
+
+  &--success {
+    background: var(--color-success-bg);
+
+    &::before {
+      background: var(--color-success);
+    }
+  }
+
+  &--danger {
+    background: var(--color-danger-bg);
+
+    &::before {
+      background: var(--color-danger);
+    }
+  }
+
+  &--neutral {
+    background: var(--color-surface-alt);
+    border: 1px solid var(--color-ink-300);
+
+    &::before {
+      background: var(--color-ink-600);
+    }
+  }
+}
+
+/* ---------- Formularios en tarjeta ---------- */
+.form-card {
+  max-width: 420px;
+}
+
+@media (max-width: 767px) {
+  .form-card {
+    max-width: none;
+  }
+}
+
+/* ---------- Movimiento respetuoso ---------- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -1,0 +1,21 @@
+.entregar-page__card {
+  max-width: 380px;
+}
+
+.entregar-page__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-full);
+  background: var(--color-blue-100);
+  color: var(--color-blue-700);
+  margin-bottom: var(--space-3);
+}
+
+.entregar-page__hint {
+  color: var(--color-ink-600);
+  font-size: 0.85rem;
+  margin: 0 0 var(--space-4);
+}

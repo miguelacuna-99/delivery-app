@@ -1,0 +1,15 @@
+.notificaciones-page__count {
+  margin-left: auto;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--color-blue-700);
+  background: var(--color-blue-100);
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+}
+
+.notificaciones-page__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}

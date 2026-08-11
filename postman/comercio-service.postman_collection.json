@@ -1,0 +1,394 @@
+{
+  "info": {
+    "_postman_id": "3f7c1a90-1d2b-4e55-9a10-000000000003",
+    "name": "comercio-service (8082)",
+    "description": "Ficha del comercio, suscripcion a la plataforma y catalogo de productos.\n\nEsta es la coleccion por la que se empieza: 'Crear comercio' deja el comercioId en el environment, que necesita auth-service para provisionar el ROOT.\n\nOjo: la suscripcion es lo que el comercio le paga a la plataforma, no el cobro de un pedido (eso es pago-service).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Comercio (plataforma)",
+      "item": [
+        {
+          "name": "Crear comercio",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// CIF unico en cada ejecucion: el CIF tiene indice unico y repetirlo da 409",
+                  "pm.environment.set('cif', 'B' + Math.floor(10000000 + Math.random() * 89999999));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created', () => pm.response.to.have.status(201));",
+                  "const c = pm.response.json();",
+                  "pm.environment.set('comercioId', c.id);",
+                  "pm.test('Nace con suscripcion ACTIVA', () => pm.expect(c.estadoSuscripcion).to.eql('ACTIVA'));",
+                  "console.log('comercioId = ' + c.id + ' | vence el ' + c.fechaFinSuscripcion);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Platform-Key", "value": "{{platformKey}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Pizzeria Demo\",\n  \"cif\": \"{{cif}}\",\n  \"direccion\": \"Calle Mayor 1\",\n  \"telefono\": \"910000000\",\n  \"email\": \"contacto@pizzeriademo.es\",\n  \"plan\": \"MENSUAL\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{comercioUrl}}/api/comercios", "host": ["{{comercioUrl}}"], "path": ["api", "comercios"] },
+            "description": "Solo la plataforma. plan admite MENSUAL o ANUAL y fija el vencimiento inicial."
+          }
+        },
+        {
+          "name": "Suspender suscripcion (impago)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Queda SUSPENDIDA', () => pm.expect(pm.response.json().estadoSuscripcion).to.eql('SUSPENDIDA'));",
+                  "console.log('Publica comercio.suspendido. Comprueba que ya no sale en el listado publico.');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "X-Platform-Key", "value": "{{platformKey}}" }],
+            "url": {
+              "raw": "{{comercioUrl}}/api/comercios/{{comercioId}}/suscripcion/suspender",
+              "host": ["{{comercioUrl}}"],
+              "path": ["api", "comercios", "{{comercioId}}", "suscripcion", "suspender"]
+            },
+            "description": "Idempotente: sobre una suscripcion ya suspendida no persiste ni publica nada."
+          }
+        },
+        {
+          "name": "Renovar suscripcion",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Vuelve a ACTIVA', () => pm.expect(pm.response.json().estadoSuscripcion).to.eql('ACTIVA'));",
+                  "console.log('Si estaba suspendida, publica comercio.reactivado.');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Platform-Key", "value": "{{platformKey}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"plan\": \"ANUAL\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{comercioUrl}}/api/comercios/{{comercioId}}/suscripcion/renovar",
+              "host": ["{{comercioUrl}}"],
+              "path": ["api", "comercios", "{{comercioId}}", "suscripcion", "renovar"]
+            },
+            "description": "Si la suscripcion aun no ha vencido, el nuevo periodo se suma desde la fecha de fin vigente: no se pierden los dias restantes."
+          }
+        },
+        {
+          "name": "Crear comercio sin la clave (403)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('403 Forbidden', () => pm.response.to.have.status(403));"]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Platform-Key", "value": "clave-incorrecta" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"No deberia crearse\",\n  \"cif\": \"B99999999\",\n  \"plan\": \"MENSUAL\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{comercioUrl}}/api/comercios", "host": ["{{comercioUrl}}"], "path": ["api", "comercios"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Comercio (consulta y edicion)",
+      "item": [
+        {
+          "name": "Listar comercios operativos (publico)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "console.log('Los comercios con suscripcion SUSPENDIDA no aparecen aqui.');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{comercioUrl}}/api/comercios", "host": ["{{comercioUrl}}"], "path": ["api", "comercios"] }
+          }
+        },
+        {
+          "name": "Ver un comercio (publico)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{comercioUrl}}/api/comercios/{{comercioId}}",
+              "host": ["{{comercioUrl}}"],
+              "path": ["api", "comercios", "{{comercioId}}"]
+            }
+          }
+        },
+        {
+          "name": "Mi comercio (Bearer)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{tokenAdmin}}" }],
+            "url": {
+              "raw": "{{comercioUrl}}/api/comercios/me",
+              "host": ["{{comercioUrl}}"],
+              "path": ["api", "comercios", "me"]
+            },
+            "description": "Resuelve el comercio por el comercioId del token, no por la URL."
+          }
+        },
+        {
+          "name": "Actualizar mi comercio (ROOT/ADMIN)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('El CIF no cambia', () => pm.expect(pm.response.json().cif).to.eql(pm.environment.get('cif')));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{tokenAdmin}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Pizzeria Demo (renovada)\",\n  \"direccion\": \"Calle Mayor 3\",\n  \"telefono\": \"910000001\",\n  \"email\": \"hola@pizzeriademo.es\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{comercioUrl}}/api/comercios/me",
+              "host": ["{{comercioUrl}}"],
+              "path": ["api", "comercios", "me"]
+            },
+            "description": "Solo datos de contacto: el CIF y la suscripcion no se tocan desde aqui."
+          }
+        },
+        {
+          "name": "PERSONAL intenta editar el comercio (403)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('403 Forbidden', () => pm.response.to.have.status(403));"]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{tokenPersonal}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"No deberia cambiar\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{comercioUrl}}/api/comercios/me",
+              "host": ["{{comercioUrl}}"],
+              "path": ["api", "comercios", "me"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Catalogo",
+      "item": [
+        {
+          "name": "Crear producto (ROOT/ADMIN)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created', () => pm.response.to.have.status(201));",
+                  "const p = pm.response.json();",
+                  "pm.environment.set('productoId', p.id);",
+                  "pm.environment.set('productoPrecio', p.precio);",
+                  "pm.test('Hereda el comercio del token', () => pm.expect(p.comercioId).to.eql(pm.environment.get('comercioId')));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{tokenAdmin}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Pizza Margarita\",\n  \"descripcion\": \"Tomate, mozzarella y albahaca\",\n  \"ingredientes\": \"Tomate, mozzarella, albahaca, aceite de oliva\",\n  \"imagenUrl\": \"https://cdn.example.com/productos/pizza-margarita.jpg\",\n  \"precio\": 9.50,\n  \"disponible\": true\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{comercioUrl}}/api/productos", "host": ["{{comercioUrl}}"], "path": ["api", "productos"] },
+            "description": "El comercioId sale del token: no se manda en el body."
+          }
+        },
+        {
+          "name": "Catalogo de un comercio (publico)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('200 OK', () => pm.response.to.have.status(200));"]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{comercioUrl}}/api/comercios/{{comercioId}}/productos",
+              "host": ["{{comercioUrl}}"],
+              "path": ["api", "comercios", "{{comercioId}}", "productos"]
+            },
+            "description": "Publico: el cliente navega el catalogo sin estar logueado."
+          }
+        },
+        {
+          "name": "Actualizar producto (cambio de precio)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('productoPrecio', pm.response.json().precio);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{tokenAdmin}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Pizza Margarita\",\n  \"descripcion\": \"Tomate, mozzarella y albahaca fresca\",\n  \"ingredientes\": \"Tomate, mozzarella, albahaca fresca, aceite de oliva\",\n  \"imagenUrl\": \"https://cdn.example.com/productos/pizza-margarita.jpg\",\n  \"precio\": 11.00,\n  \"disponible\": true\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{comercioUrl}}/api/productos/{{productoId}}",
+              "host": ["{{comercioUrl}}"],
+              "path": ["api", "productos", "{{productoId}}"]
+            },
+            "description": "Cambiar el precio no altera los pedidos ya creados: el pedido guarda un snapshot."
+          }
+        },
+        {
+          "name": "PERSONAL intenta crear producto (403)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('403 Forbidden', () => pm.response.to.have.status(403));"]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{tokenPersonal}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"No deberia crearse\",\n  \"precio\": 1.00,\n  \"disponible\": true\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{comercioUrl}}/api/productos", "host": ["{{comercioUrl}}"], "path": ["api", "productos"] },
+            "description": "Solo ROOT y ADMIN gestionan el catalogo."
+          }
+        },
+        {
+          "name": "Eliminar producto",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('204 No Content', () => pm.response.to.have.status(204));"]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{tokenAdmin}}" }],
+            "url": {
+              "raw": "{{comercioUrl}}/api/productos/{{productoId}}",
+              "host": ["{{comercioUrl}}"],
+              "path": ["api", "productos", "{{productoId}}"]
+            },
+            "description": "Un producto de otro comercio responde 404, no 403: un 403 confirmaria que ese id existe."
+          }
+        }
+      ]
+    }
+  ]
+}

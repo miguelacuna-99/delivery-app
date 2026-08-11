@@ -1,0 +1,13 @@
+<ui-card class="forgot-page">
+  <h1>He olvidado mi contraseña</h1>
+
+  @if (sent()) {
+    <p>Si el correo existe en nuestro sistema, recibiras un enlace para restablecer la contraseña.</p>
+    <a routerLink="/login">Volver a iniciar sesion</a>
+  } @else {
+    <form (ngSubmit)="submit()">
+      <ui-input label="Correo" type="email" [value]="mail()" (valueChange)="mail.set($event)" />
+      <ui-button class="forgot-page__submit" type="submit" [loading]="loading()">Enviar enlace</ui-button>
+    </form>
+  }
+</ui-card>

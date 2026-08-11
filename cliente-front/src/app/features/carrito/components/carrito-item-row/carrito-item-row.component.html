@@ -1,0 +1,37 @@
+<div class="carrito-item-row">
+  <span class="avatar-tile carrito-item-row__avatar" [class]="avatarClase()">{{ iniciales() }}</span>
+
+  <div class="carrito-item-row__info">
+    <span class="carrito-item-row__nombre">{{ item().nombre ?? item().productoId }}</span>
+    @if (item().precio !== undefined) {
+      <span class="carrito-item-row__precio">{{ item().precio!.toFixed(2) }} € / ud.</span>
+    }
+  </div>
+
+  <div class="carrito-item-row__cantidad">
+    <ui-button variant="ghost" (clicked)="onDecrementar()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true">
+        <path d="M5 12h14" />
+      </svg>
+      <span class="sr-only">Quitar una unidad</span>
+    </ui-button>
+    <span class="carrito-item-row__cantidad-valor">{{ item().cantidad }}</span>
+    <ui-button variant="ghost" (clicked)="onIncrementar()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true">
+        <path d="M12 5v14M5 12h14" />
+      </svg>
+      <span class="sr-only">Añadir una unidad</span>
+    </ui-button>
+  </div>
+
+  @if (item().subtotal !== undefined) {
+    <span class="carrito-item-row__subtotal">{{ item().subtotal!.toFixed(2) }} €</span>
+  }
+
+  <ui-button class="carrito-item-row__quitar" variant="ghost" (clicked)="eliminar.emit()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m3 0-.8 12a1.5 1.5 0 0 1-1.5 1.4H8.3A1.5 1.5 0 0 1 6.8 19L6 7" />
+    </svg>
+    <span class="carrito-item-row__quitar-label">Quitar</span>
+  </ui-button>
+</div>

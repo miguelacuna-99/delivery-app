@@ -1,0 +1,42 @@
+.pedido-card {
+  display: block;
+  margin-bottom: var(--space-4);
+  transition: box-shadow var(--duration-base) var(--ease-standard);
+
+  &--destacado {
+    box-shadow: 0 0 0 2px var(--color-blue-600), var(--shadow-md);
+  }
+}
+
+.pedido-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+
+  h3 {
+    margin: 0;
+    font-size: 1rem;
+  }
+}
+
+.pedido-card__fecha {
+  margin: 2px 0 0;
+  font-size: 0.8rem;
+  color: var(--color-ink-600);
+}
+
+.pedido-card__total {
+  text-align: right;
+  margin: var(--space-3) 0 0;
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-border);
+  color: var(--color-ink-600);
+
+  strong {
+    color: var(--color-ink-950);
+    font-size: 1.05rem;
+  }
+}

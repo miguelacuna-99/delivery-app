@@ -1,0 +1,24 @@
+<ui-card class="producto-card">
+  <span class="avatar-tile producto-card__avatar" [class]="avatarClase()">{{ iniciales() }}</span>
+
+  <div class="producto-card__body">
+    <h3>{{ producto().nombre }}</h3>
+    @if (producto().descripcion) {
+      <p class="producto-card__descripcion">{{ producto().descripcion }}</p>
+    }
+
+    @if (!producto().disponible) {
+      <span class="producto-card__no-disponible">No disponible</span>
+    }
+  </div>
+
+  <div class="producto-card__footer">
+    <p class="producto-card__precio">{{ producto().precio.toFixed(2) }} €</p>
+    <ui-button [disabled]="!producto().disponible" (clicked)="onAnadir()">
+      <svg class="producto-card__icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M12 5v14M5 12h14" />
+      </svg>
+      Añadir
+    </ui-button>
+  </div>
+</ui-card>

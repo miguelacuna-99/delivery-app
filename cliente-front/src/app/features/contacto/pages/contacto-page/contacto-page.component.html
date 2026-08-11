@@ -1,0 +1,16 @@
+<ui-card class="contacto-page">
+  <h1>Mis datos de contacto</h1>
+  <p>Rellena solo los campos que quieras cambiar.</p>
+
+  <form (ngSubmit)="submit()">
+    <ui-input label="Correo" type="email" [value]="mail()" (valueChange)="mail.set($event)" />
+    <ui-input label="Direccion de entrega" [value]="direccionDomicilio()" (valueChange)="direccionDomicilio.set($event)" />
+    <ui-input label="Telefono" [value]="telefono()" (valueChange)="telefono.set($event)" />
+
+    @if (errorMessage()) {
+      <p class="contacto-page__error">{{ errorMessage() }}</p>
+    }
+
+    <ui-button class="contacto-page__submit" type="submit" [loading]="loading()">Guardar cambios</ui-button>
+  </form>
+</ui-card>

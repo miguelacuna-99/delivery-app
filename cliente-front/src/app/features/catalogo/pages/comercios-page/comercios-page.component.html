@@ -1,0 +1,17 @@
+<div class="comercios-page">
+  <h1>Comercios</h1>
+
+  @if (loading()) {
+    <ui-spinner label="Cargando comercios..." />
+  } @else if (error()) {
+    <p class="comercios-page__error">{{ error() }}</p>
+  } @else if (comercios().length === 0) {
+    <p class="comercios-page__vacio">No hay comercios disponibles ahora mismo.</p>
+  } @else {
+    <div class="comercios-page__grid">
+      @for (comercio of comercios(); track comercio.id) {
+        <app-comercio-card [comercio]="comercio" (seleccionar)="onSeleccionar($event)" />
+      }
+    </div>
+  }
+</div>

@@ -1,0 +1,29 @@
+server:
+  port: 8084
+
+spring:
+  application:
+    name: pago-service
+
+  data:
+    mongodb:
+      uri: mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@${MONGO_HOST:localhost}:${MONGO_PORT:27017}/pago_db?authSource=admin
+
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME}
+    password: ${RABBITMQ_PASSWORD}
+
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+
+pago:
+  mock:
+    # Probabilidad de que la pasarela mock autorice el cobro [0..1]
+    probabilidad-exito: ${PAGO_MOCK_PROBABILIDAD_EXITO:0.9}
+
+logging:
+  level:
+    es.delivery.manager.pago: DEBUG

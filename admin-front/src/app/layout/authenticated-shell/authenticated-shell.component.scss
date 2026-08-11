@@ -1,0 +1,28 @@
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.app-shell__body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.app-shell__content {
+  flex: 1;
+  min-width: 0;
+  padding: var(--space-5);
+  background: var(--color-surface-alt);
+}
+
+@media (max-width: 767px) {
+  .app-shell__body {
+    flex-direction: column;
+  }
+
+  .app-shell__content {
+    padding: var(--space-4);
+  }
+}
