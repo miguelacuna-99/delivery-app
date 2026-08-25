@@ -23,6 +23,16 @@
   }
 }
 
+.puntos-page__historial-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+
+  h2 {
+    margin: 0;
+  }
+}
+
 .puntos-page__historial {
   list-style: none;
   padding: 0;

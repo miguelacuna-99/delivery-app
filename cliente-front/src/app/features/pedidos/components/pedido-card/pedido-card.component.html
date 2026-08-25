@@ -10,4 +10,8 @@
   <app-pedido-timeline [pedido]="pedido()" />
 
   <p class="pedido-card__total">Total: <strong>{{ pedido().total.toFixed(2) }} €</strong></p>
+
+  @if (pedido().estado === 'ACEPTADO') {
+    <app-pago-tarjeta-panel [pedidoId]="pedido().id" />
+  }
 </ui-card>

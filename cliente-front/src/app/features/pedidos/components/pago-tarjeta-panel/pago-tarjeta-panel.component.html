@@ -1,0 +1,38 @@
+@if (!pagado()) {
+  @if (!abierto()) {
+    <ui-button variant="ghost" (clicked)="abrir()">Seleccionar tarjeta</ui-button>
+  } @else {
+    <div class="pago-tarjeta-panel">
+      @if (cargandoTarjetas()) {
+        <ui-spinner label="Cargando tarjetas..." />
+      } @else {
+        @if (tarjetas().length > 0 && !mostrarFormNueva()) {
+          <div class="pago-tarjeta-panel__lista">
+            @for (tarjeta of tarjetas(); track tarjeta.id) {
+              <button
+                type="button"
+                class="pago-tarjeta-panel__opcion"
+                [class.pago-tarjeta-panel__opcion--activa]="tarjetaSeleccionada() === tarjeta.id"
+                (click)="seleccionar(tarjeta.id)"
+              >
+                {{ tarjeta.marca }} •••• {{ tarjeta.ultimos4 }}
+              </button>
+            }
+          </div>
+          <ui-button variant="ghost" (clicked)="anadirNueva()">+ Añadir tarjeta nueva</ui-button>
+        }
+
+        @if (mostrarFormNueva()) {
+          <app-tarjeta-form [mostrarBoton]="false" />
+          @if (tarjetas().length > 0) {
+            <ui-button variant="ghost" (clicked)="mostrarFormNueva.set(false)">Usar una tarjeta guardada</ui-button>
+          }
+        }
+
+        <ui-button [loading]="pagando()" [disabled]="!puedePagar()" (clicked)="pagar()">Pagar</ui-button>
+      }
+    </div>
+  }
+} @else {
+  <p class="pago-tarjeta-panel__confirmado">Pago enviado, esperando confirmación.</p>
+}

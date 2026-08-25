@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { PuntosApiService } from '../../features/puntos/services/puntos-api.service';
@@ -17,6 +17,13 @@ export class NavbarComponent implements OnInit {
 
   readonly currentUser = this.authService.currentUser;
   readonly saldoPuntos = signal<number | null>(null);
+
+  // Cada cliente esta atado a un unico comercio: el enlace de catalogo siempre
+  // apunta al suyo (el guard cliente-comercio.guard igualmente lo forzaria).
+  readonly catalogoLink = computed(() => {
+    const comercioId = this.authService.comercioId();
+    return comercioId ? ['/catalogo', comercioId] : ['/catalogo'];
+  });
 
   ngOnInit(): void {
     this.puntosApi.misPuntos().subscribe({

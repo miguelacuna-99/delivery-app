@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../../../environments/environment';
-import { Carrito, CarritoRequest } from '../models/carrito.model';
+import { AplicarCuponResponse, AplicarPuntosResponse, Carrito, CarritoRequest } from '../models/carrito.model';
 
 @Injectable({ providedIn: 'root' })
 export class CarritoApiService {
@@ -19,5 +19,21 @@ export class CarritoApiService {
 
   vaciar(): Observable<void> {
     return this.http.delete<void>(this.baseUrl);
+  }
+
+  aplicarCupon(codigo: string): Observable<AplicarCuponResponse> {
+    return this.http.post<AplicarCuponResponse>(`${this.baseUrl}/cupon`, { codigo });
+  }
+
+  quitarCupon(): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/cupon`);
+  }
+
+  aplicarPuntos(puntos: number): Observable<AplicarPuntosResponse> {
+    return this.http.post<AplicarPuntosResponse>(`${this.baseUrl}/puntos`, { puntos });
+  }
+
+  quitarPuntos(): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/puntos`);
   }
 }

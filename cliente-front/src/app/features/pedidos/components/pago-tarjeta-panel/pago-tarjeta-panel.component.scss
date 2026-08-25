@@ -1,0 +1,53 @@
+.pago-tarjeta-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  margin-top: var(--space-3);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-border);
+  animation: pago-tarjeta-panel-in var(--duration-base) var(--ease-standard);
+}
+
+.pago-tarjeta-panel__lista {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  justify-content: center;
+}
+
+.pago-tarjeta-panel__opcion {
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  background: var(--color-surface);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    border-color var(--duration-fast) var(--ease-standard),
+    background var(--duration-fast) var(--ease-standard);
+
+  &--activa {
+    border-color: var(--color-blue-600);
+    background: var(--color-blue-100);
+    color: var(--color-blue-700);
+  }
+}
+
+.pago-tarjeta-panel__confirmado {
+  margin: var(--space-3) 0 0;
+  color: var(--color-success);
+  font-weight: 600;
+}
+
+@keyframes pago-tarjeta-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

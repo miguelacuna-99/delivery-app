@@ -13,6 +13,7 @@ import es.delivery.manager.pedido.domain.model.TokenClaims;
 import es.delivery.manager.pedido.domain.repository.CarritoRepository;
 import es.delivery.manager.pedido.domain.repository.EstadoComercioRepository;
 import es.delivery.manager.pedido.domain.repository.PedidoRepository;
+import es.delivery.manager.pedido.domain.service.ComercioPort;
 import es.delivery.manager.pedido.domain.service.FidelidadPort;
 import es.delivery.manager.pedido.domain.service.ProductoPort;
 import es.delivery.manager.contracts.model.EstadoPedido;
@@ -33,8 +34,6 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class CheckoutService implements CheckoutUseCase {
 
-    // Canje de puntos: 1 punto = 0.01 EUR de descuento
-    private static final BigDecimal VALOR_PUNTO = new BigDecimal("0.01");
     // Sin caracteres ambiguos (0/O, 1/I/L) para dictarlo al repartidor sin errores
     private static final String ALFABETO_NUMERO = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
     private static final int LONGITUD_NUMERO = 6;
@@ -43,6 +42,7 @@ public class CheckoutService implements CheckoutUseCase {
     private final PedidoRepository pedidoRepository;
     private final ProductoPort productoPort;
     private final FidelidadPort fidelidadPort;
+    private final ComercioPort comercioPort;
     private final EstadoComercioRepository estadoComercioRepository;
     private final PedidoEventPublisher eventPublisher;
     private final SecureRandom random = new SecureRandom();
@@ -56,6 +56,12 @@ public class CheckoutService implements CheckoutUseCase {
             throw new CarritoVacioException();
         }
         checkComercioOperativo(carrito.getComercioId());
+        // Ultima linea de defensa: aplicarCupon/aplicarPuntos ya se rechazan
+        // mutuamente al fijarse en el carrito, esto nunca deberia disparar
+        boolean tieneCupon = carrito.getCodigoCupon() != null && !carrito.getCodigoCupon().isBlank();
+        if (tieneCupon && carrito.getPuntosAplicados() > 0) {
+            throw new CuponYPuntosExcluyentesException();
+        }
 
         // El carrito solo dice QUE se pide y CUANTO; el precio y el nombre
         // salen siempre del catalogo, nunca de lo que mande el cliente
@@ -158,12 +164,13 @@ public class CheckoutService implements CheckoutUseCase {
         if (puntos <= 0) {
             return BigDecimal.ZERO;
         }
-        int saldo = fidelidadPort.saldoPuntos(carrito.getClienteId());
+        int saldo = fidelidadPort.saldoPuntos(carrito.getClienteId(), carrito.getComercioId());
         if (puntos > saldo) {
             throw new PuntosInsuficientesException(puntos, saldo);
         }
+        BigDecimal valorPunto = comercioPort.getValorPunto(carrito.getComercioId());
         // El descuento por puntos nunca deja el total en negativo
-        return VALOR_PUNTO.multiply(BigDecimal.valueOf(puntos)).min(restante);
+        return valorPunto.multiply(BigDecimal.valueOf(puntos)).min(restante);
     }
 
     private String generarNumeroPedido() {

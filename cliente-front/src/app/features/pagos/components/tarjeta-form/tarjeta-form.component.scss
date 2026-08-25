@@ -1,0 +1,24 @@
+.tarjeta-form {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-5);
+}
+
+.tarjeta-form__campos {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  width: 100%;
+  max-width: 340px;
+}
+
+.tarjeta-form__fila {
+  display: flex;
+  gap: var(--space-3);
+
+  > * {
+    flex: 1;
+    min-width: 0;
+  }
+}

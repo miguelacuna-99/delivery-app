@@ -1,0 +1,23 @@
+<div class="tarjeta-preview" [class]="claseMarca()">
+  <div class="tarjeta-preview__brillo" aria-hidden="true"></div>
+
+  <div class="tarjeta-preview__top">
+    <span class="tarjeta-preview__chip" aria-hidden="true"></span>
+    @if (marca() !== 'OTRA') {
+      <span class="tarjeta-preview__marca">{{ marca() }}</span>
+    }
+  </div>
+
+  <div class="tarjeta-preview__numero">{{ numeroMostrado() }}</div>
+
+  <div class="tarjeta-preview__bottom">
+    <div class="tarjeta-preview__campo">
+      <span class="tarjeta-preview__label">Titular</span>
+      <span class="tarjeta-preview__valor">{{ titular() || 'NOMBRE APELLIDOS' }}</span>
+    </div>
+    <div class="tarjeta-preview__campo tarjeta-preview__campo--vence">
+      <span class="tarjeta-preview__label">Vence</span>
+      <span class="tarjeta-preview__valor">{{ vencimiento() || 'MM/AA' }}</span>
+    </div>
+  </div>
+</div>

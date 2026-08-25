@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
 import { ToastService } from '../../services/toast.service';
 
 @Component({
@@ -8,6 +8,9 @@ import { ToastService } from '../../services/toast.service';
 })
 export class ToastComponent {
   protected readonly toastService = inject(ToastService);
+
+  // Mas reciente primero, para que se apile hacia atras como una pila de cartas
+  protected readonly toastsOrdenados = computed(() => [...this.toastService.toasts()].reverse());
 
   dismiss(id: number): void {
     this.toastService.dismiss(id);

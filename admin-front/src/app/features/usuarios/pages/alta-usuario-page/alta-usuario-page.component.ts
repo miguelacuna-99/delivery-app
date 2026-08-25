@@ -1,6 +1,6 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { CrearUsuarioRequest, UsuarioApiService } from '../../services/usuario-api.service';
+import { CrearUsuarioRequest, Usuario, UsuarioApiService } from '../../services/usuario-api.service';
 import { InputComponent } from '../../../../shared/components/input/input.component';
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
 import { CardComponent } from '../../../../shared/components/card/card.component';
@@ -13,34 +13,75 @@ import { TipoUsuario } from '../../../../core/models/auth.model';
   standalone: true,
   imports: [CommonModule, InputComponent, ButtonComponent, CardComponent],
   template: `
-    <h2 class="page-title">Alta de usuario</h2>
+    <div class="page-stack">
+      <h2 class="page-title">Alta de usuario</h2>
 
-    <app-card class="form-card">
-      <app-input label="Usuario" [value]="username()" (valueChange)="username.set($event)"></app-input>
-      <app-input
-        label="Contraseña"
-        type="password"
-        [value]="password()"
-        (valueChange)="password.set($event)"
-      ></app-input>
-      <app-input label="Email" [value]="mail()" (valueChange)="mail.set($event)"></app-input>
-      <app-input label="Teléfono" [value]="telefono()" (valueChange)="telefono.set($event)"></app-input>
+      <app-card class="form-card">
+        <app-input label="Usuario" [value]="username()" (valueChange)="username.set($event)"></app-input>
+        <app-input
+          label="Contraseña"
+          type="password"
+          [value]="password()"
+          (valueChange)="password.set($event)"
+        ></app-input>
+        <app-input label="Email" [value]="mail()" (valueChange)="mail.set($event)"></app-input>
+        <app-input label="Teléfono" [value]="telefono()" (valueChange)="telefono.set($event)"></app-input>
 
-      <div class="alta-usuario-page__tipo">
-        <label for="tipo-select">Tipo</label>
-        <select id="tipo-select" class="filter-select" [value]="tipo()" (change)="onTipoChange($event)">
-          @for (opcion of tiposDisponibles(); track opcion) {
-            <option [value]="opcion">{{ opcion }}</option>
-          }
-        </select>
-      </div>
+        <div class="alta-usuario-page__tipo">
+          <label for="tipo-select">Tipo</label>
+          <select id="tipo-select" class="filter-select" [value]="tipo()" (change)="onTipoChange($event)">
+            @for (opcion of tiposDisponibles(); track opcion) {
+              <option [value]="opcion">{{ opcion }}</option>
+            }
+          </select>
+        </div>
 
-      <app-button [loading]="saving()" (clicked)="crear()">Crear usuario</app-button>
-    </app-card>
+        <app-button [loading]="saving()" (clicked)="crear()">Crear usuario</app-button>
+      </app-card>
+
+      @if (esRoot()) {
+        <h2 class="page-title">Usuarios del comercio</h2>
+
+        @if (loadingUsuarios()) {
+          <p>Cargando usuarios...</p>
+        } @else if (usuarios().length === 0) {
+          <div class="empty-state">
+            <p>No hay usuarios todavía.</p>
+          </div>
+        } @else {
+          <div class="table-wrapper">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Usuario</th>
+                  <th>Email</th>
+                  <th>Teléfono</th>
+                  <th>Tipo</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (usuario of usuarios(); track usuario.id) {
+                  <tr>
+                    <td>{{ usuario.username }}</td>
+                    <td>{{ usuario.mail }}</td>
+                    <td>{{ usuario.telefono }}</td>
+                    <td>{{ usuario.tipo }}</td>
+                    <td>
+                      <app-button variant="danger" (clicked)="eliminar(usuario)">Eliminar</app-button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      }
+    </div>
   `,
   styleUrl: './alta-usuario-page.component.scss'
 })
-export class AltaUsuarioPageComponent {
+export class AltaUsuarioPageComponent implements OnInit {
   private readonly usuarioApi = inject(UsuarioApiService);
   private readonly toastService = inject(ToastService);
   private readonly authService = inject(AuthService);
@@ -52,6 +93,10 @@ export class AltaUsuarioPageComponent {
   readonly tipo = signal<TipoUsuario>(TipoUsuario.PERSONAL);
   readonly saving = signal(false);
 
+  readonly esRoot = computed(() => this.authService.tipo() === TipoUsuario.ROOT);
+  readonly usuarios = signal<Usuario[]>([]);
+  readonly loadingUsuarios = signal(false);
+
   readonly tiposDisponibles = computed<TipoUsuario[]>(() => {
     const tipoActual = this.authService.tipo();
     if (tipoActual === TipoUsuario.ROOT) {
@@ -60,8 +105,41 @@ export class AltaUsuarioPageComponent {
     return [TipoUsuario.PERSONAL, TipoUsuario.REPARTIDOR];
   });
 
+  ngOnInit(): void {
+    if (this.esRoot()) {
+      this.cargarUsuarios();
+    }
+  }
+
   onTipoChange(event: Event): void {
     this.tipo.set((event.target as HTMLSelectElement).value as TipoUsuario);
+  }
+
+  cargarUsuarios(): void {
+    this.loadingUsuarios.set(true);
+    this.usuarioApi.listar().subscribe({
+      next: (usuarios) => {
+        this.usuarios.set(usuarios);
+        this.loadingUsuarios.set(false);
+      },
+      error: () => {
+        this.loadingUsuarios.set(false);
+        this.toastService.error('No se pudieron cargar los usuarios.');
+      }
+    });
+  }
+
+  eliminar(usuario: Usuario): void {
+    if (!confirm(`¿Eliminar al usuario "${usuario.username}"?`)) {
+      return;
+    }
+    this.usuarioApi.eliminar(usuario.id).subscribe({
+      next: () => {
+        this.toastService.success('Usuario eliminado.');
+        this.cargarUsuarios();
+      },
+      error: () => this.toastService.error('No se pudo eliminar el usuario.')
+    });
   }
 
   crear(): void {
@@ -85,6 +163,9 @@ export class AltaUsuarioPageComponent {
         this.password.set('');
         this.mail.set('');
         this.telefono.set('');
+        if (this.esRoot()) {
+          this.cargarUsuarios();
+        }
       },
       error: () => {
         this.saving.set(false);

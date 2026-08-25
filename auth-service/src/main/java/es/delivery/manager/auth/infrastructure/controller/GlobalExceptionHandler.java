@@ -48,6 +48,18 @@ public class GlobalExceptionHandler {
                 .body(Map.of("error", ex.getMessage()));
     }
 
+    @ExceptionHandler(AutoEliminacionException.class)
+    public ResponseEntity<Map<String, String>> handleAutoEliminacion(AutoEliminacionException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of("error", ex.getMessage()));
+    }
+
+    @ExceptionHandler(UsuarioNotFoundException.class)
+    public ResponseEntity<Map<String, String>> handleUsuarioNotFound(UsuarioNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(Map.of("error", ex.getMessage()));
+    }
+
     @ExceptionHandler(ForbiddenOperationException.class)
     public ResponseEntity<Map<String, String>> handleForbidden(ForbiddenOperationException ex) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN)

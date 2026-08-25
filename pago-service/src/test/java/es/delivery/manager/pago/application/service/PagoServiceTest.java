@@ -4,8 +4,11 @@ import es.delivery.manager.contracts.event.RoutingKeys;
 import es.delivery.manager.contracts.model.EstadoPago;
 import es.delivery.manager.pago.domain.event.PagoEvent;
 import es.delivery.manager.pago.domain.event.PagoEventPublisher;
+import es.delivery.manager.pago.domain.model.MarcaTarjeta;
 import es.delivery.manager.pago.domain.model.Pago;
+import es.delivery.manager.pago.domain.model.Tarjeta;
 import es.delivery.manager.pago.domain.repository.PagoRepository;
+import es.delivery.manager.pago.domain.repository.TarjetaRepository;
 import es.delivery.manager.pago.domain.service.PasarelaPort;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -29,6 +32,9 @@ class PagoServiceTest {
     private PagoRepository pagoRepository;
 
     @Mock
+    private TarjetaRepository tarjetaRepository;
+
+    @Mock
     private PasarelaPort pasarelaPort;
 
     @Mock
@@ -39,14 +45,21 @@ class PagoServiceTest {
 
     private static final BigDecimal IMPORTE = new BigDecimal("18.80");
 
+    private void tarjetaValidaDe(String clienteId) {
+        when(tarjetaRepository.findById("tarjeta-1")).thenReturn(Optional.of(
+                Tarjeta.builder().id("tarjeta-1").clienteId(clienteId).marca(MarcaTarjeta.VISA)
+                        .ultimos4("4242").build()));
+    }
+
     @Test
     void cobroAutorizadoPublicaPagoCompletado() {
         when(pagoRepository.findByPedidoId("pedido-1")).thenReturn(Optional.empty());
+        tarjetaValidaDe("cliente-1");
         when(pasarelaPort.cobrar("pedido-1", IMPORTE))
                 .thenReturn(new PasarelaPort.ResultadoCobro(true, "firma-abc"));
         when(pagoRepository.save(any(Pago.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        Pago pago = pagoService.procesarPago("pedido-1", "comercio-1", "cliente-1", IMPORTE);
+        Pago pago = pagoService.procesarPago("pedido-1", "comercio-1", "cliente-1", "tarjeta-1", IMPORTE);
 
         assertThat(pago.getEstado()).isEqualTo(EstadoPago.COMPLETADO);
         assertThat(pago.getFirma()).isEqualTo("firma-abc");
@@ -58,11 +71,12 @@ class PagoServiceTest {
     @Test
     void cobroDenegadoPublicaPagoFallido() {
         when(pagoRepository.findByPedidoId("pedido-1")).thenReturn(Optional.empty());
+        tarjetaValidaDe("cliente-1");
         when(pasarelaPort.cobrar("pedido-1", IMPORTE))
                 .thenReturn(new PasarelaPort.ResultadoCobro(false, "firma-abc"));
         when(pagoRepository.save(any(Pago.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        Pago pago = pagoService.procesarPago("pedido-1", "comercio-1", "cliente-1", IMPORTE);
+        Pago pago = pagoService.procesarPago("pedido-1", "comercio-1", "cliente-1", "tarjeta-1", IMPORTE);
 
         assertThat(pago.getEstado()).isEqualTo(EstadoPago.FALLIDO);
         ArgumentCaptor<PagoEvent> captor = ArgumentCaptor.forClass(PagoEvent.class);
@@ -71,11 +85,38 @@ class PagoServiceTest {
     }
 
     @Test
+    void unaTarjetaDeOtroClienteDeniegaElPagoSinLlamarALaPasarela() {
+        when(pagoRepository.findByPedidoId("pedido-1")).thenReturn(Optional.empty());
+        tarjetaValidaDe("otro-cliente");
+        when(pagoRepository.save(any(Pago.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Pago pago = pagoService.procesarPago("pedido-1", "comercio-1", "cliente-1", "tarjeta-1", IMPORTE);
+
+        assertThat(pago.getEstado()).isEqualTo(EstadoPago.FALLIDO);
+        verify(pasarelaPort, never()).cobrar(any(), any());
+        ArgumentCaptor<PagoEvent> captor = ArgumentCaptor.forClass(PagoEvent.class);
+        verify(eventPublisher).publish(captor.capture());
+        assertThat(captor.getValue().getRoutingKey()).isEqualTo(RoutingKeys.PAGO_FALLIDO);
+    }
+
+    @Test
+    void unaTarjetaInexistenteDeniegaElPagoSinLlamarALaPasarela() {
+        when(pagoRepository.findByPedidoId("pedido-1")).thenReturn(Optional.empty());
+        when(tarjetaRepository.findById("no-existe")).thenReturn(Optional.empty());
+        when(pagoRepository.save(any(Pago.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Pago pago = pagoService.procesarPago("pedido-1", "comercio-1", "cliente-1", "no-existe", IMPORTE);
+
+        assertThat(pago.getEstado()).isEqualTo(EstadoPago.FALLIDO);
+        verify(pasarelaPort, never()).cobrar(any(), any());
+    }
+
+    @Test
     void pagoSolicitadoDuplicadoNoCobraDosVeces() {
         Pago existente = Pago.builder().pedidoId("pedido-1").estado(EstadoPago.COMPLETADO).build();
         when(pagoRepository.findByPedidoId("pedido-1")).thenReturn(Optional.of(existente));
 
-        Pago pago = pagoService.procesarPago("pedido-1", "comercio-1", "cliente-1", IMPORTE);
+        Pago pago = pagoService.procesarPago("pedido-1", "comercio-1", "cliente-1", "tarjeta-1", IMPORTE);
 
         assertThat(pago).isSameAs(existente);
         verify(pasarelaPort, never()).cobrar(any(), any());

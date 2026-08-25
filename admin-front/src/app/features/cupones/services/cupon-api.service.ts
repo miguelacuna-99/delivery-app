@@ -7,6 +7,7 @@ export interface Cupon {
   id: string;
   codigo: string;
   porcentajeDescuento: number;
+  usosMaximosPorUsuario: number;
   fechaCaducidad: string;
   estado: 'ACTIVO' | 'ANULADO' | 'CADUCADO';
   [key: string]: unknown;
@@ -15,6 +16,7 @@ export interface Cupon {
 export interface CrearCuponRequest {
   codigo: string;
   porcentajeDescuento: number;
+  usosMaximosPorUsuario: number;
   fechaCaducidad: string;
 }
 

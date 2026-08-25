@@ -6,5 +6,5 @@ import java.util.Optional;
 
 public interface CuentaPuntosRepository {
     CuentaPuntos save(CuentaPuntos cuenta);
-    Optional<CuentaPuntos> findByClienteId(String clienteId);
+    Optional<CuentaPuntos> findByClienteIdAndComercioId(String clienteId, String comercioId);
 }

@@ -1,5 +1,5 @@
 import { Injectable, computed, signal } from '@angular/core';
-import { DecodedToken, LoginResponse } from '../models/auth.model';
+import { DecodedToken, LoginResponse, TipoUsuario } from '../models/auth.model';
 import { TokenStorageService } from './token-storage.service';
 
 /**
@@ -19,6 +19,9 @@ export class AuthService {
     const user = this.currentUserSignal();
     return user !== null && !this.tokenStorage.isExpired(user);
   });
+
+  readonly tipo = computed<TipoUsuario | null>(() => this.currentUserSignal()?.tipo ?? null);
+  readonly comercioId = computed<string | null>(() => this.currentUserSignal()?.comercioId ?? null);
 
   constructor(private readonly tokenStorage: TokenStorageService) {}
 

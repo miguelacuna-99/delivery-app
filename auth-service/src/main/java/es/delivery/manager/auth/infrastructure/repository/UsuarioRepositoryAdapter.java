@@ -48,4 +48,9 @@ public class UsuarioRepositoryAdapter implements UsuarioRepository {
                 .map(usuarioMapper::toDomain)
                 .toList();
     }
+
+    @Override
+    public void deleteById(String id) {
+        mongoRepository.deleteById(id);
+    }
 }

@@ -37,7 +37,7 @@ public class FidelidadEventService implements ProcesarEventoPedidoUseCase, Proce
     @Override
     public void pedidoCreado(PedidoEventMessage message) {
         if (message.getPuntosAplicados() > 0) {
-            registrarMovimiento(message.getClienteId(), message.getPedidoId(),
+            registrarMovimiento(message.getClienteId(), message.getComercioId(), message.getPedidoId(),
                     TipoMovimiento.CANJEADO, -message.getPuntosAplicados());
         }
         if (tieneCupon(message)) {
@@ -70,23 +70,24 @@ public class FidelidadEventService implements ProcesarEventoPedidoUseCase, Proce
         if (puntos <= 0) {
             return;
         }
-        if (yaHayMovimiento(message.getClienteId(), message.getPedidoId(), TipoMovimiento.GANADO)) {
+        if (yaHayMovimiento(message.getClienteId(), message.getComercioId(), message.getPedidoId(), TipoMovimiento.GANADO)) {
             log.debug("pago.completado repetido para pedido {}: los puntos ya se otorgaron",
                     message.getPedidoId());
             return;
         }
-        registrarMovimiento(message.getClienteId(), message.getPedidoId(), TipoMovimiento.GANADO, puntos);
+        registrarMovimiento(message.getClienteId(), message.getComercioId(), message.getPedidoId(),
+                TipoMovimiento.GANADO, puntos);
     }
 
     @Override
     public void devolucionCompletada(PagoEventMessage message) {
         // Pedido DEVUELTO: se retiran los puntos que se otorgaron al pagarlo
-        cuentaPuntosRepository.findByClienteId(message.getClienteId()).ifPresent(cuenta -> {
+        cuentaPuntosRepository.findByClienteIdAndComercioId(message.getClienteId(), message.getComercioId()).ifPresent(cuenta -> {
             int ganados = puntosNetosPorTipo(cuenta, message.getPedidoId(), TipoMovimiento.GANADO);
             int retirados = puntosNetosPorTipo(cuenta, message.getPedidoId(), TipoMovimiento.RETIRADO);
             int pendiente = ganados + retirados;
             if (pendiente > 0) {
-                registrarMovimiento(message.getClienteId(), message.getPedidoId(),
+                registrarMovimiento(message.getClienteId(), message.getComercioId(), message.getPedidoId(),
                         TipoMovimiento.RETIRADO, -pendiente);
             }
         });
@@ -97,7 +98,7 @@ public class FidelidadEventService implements ProcesarEventoPedidoUseCase, Proce
      * una vez: si ya hay un movimiento DEVUELTO para ese pedido, no repite nada.
      */
     private void devolverReserva(PedidoEventMessage message) {
-        boolean yaDevuelto = yaHayMovimiento(message.getClienteId(), message.getPedidoId(),
+        boolean yaDevuelto = yaHayMovimiento(message.getClienteId(), message.getComercioId(), message.getPedidoId(),
                 TipoMovimiento.DEVUELTO);
         if (yaDevuelto) {
             log.debug("Reserva del pedido {} ya devuelta: se ignora el evento repetido",
@@ -105,7 +106,7 @@ public class FidelidadEventService implements ProcesarEventoPedidoUseCase, Proce
             return;
         }
         if (message.getPuntosAplicados() > 0) {
-            registrarMovimiento(message.getClienteId(), message.getPedidoId(),
+            registrarMovimiento(message.getClienteId(), message.getComercioId(), message.getPedidoId(),
                     TipoMovimiento.DEVUELTO, message.getPuntosAplicados());
         }
         if (tieneCupon(message)) {
@@ -117,17 +118,18 @@ public class FidelidadEventService implements ProcesarEventoPedidoUseCase, Proce
         return message.getCodigoCupon() != null && !message.getCodigoCupon().isBlank();
     }
 
-    private boolean yaHayMovimiento(String clienteId, String pedidoId, TipoMovimiento tipo) {
-        return cuentaPuntosRepository.findByClienteId(clienteId)
+    private boolean yaHayMovimiento(String clienteId, String comercioId, String pedidoId, TipoMovimiento tipo) {
+        return cuentaPuntosRepository.findByClienteIdAndComercioId(clienteId, comercioId)
                 .map(cuenta -> cuenta.getMovimientos() != null && cuenta.getMovimientos().stream()
                         .anyMatch(m -> pedidoId.equals(m.getPedidoId()) && m.getTipo() == tipo))
                 .orElse(false);
     }
 
-    private void registrarMovimiento(String clienteId, String pedidoId, TipoMovimiento tipo, int puntos) {
-        CuentaPuntos cuenta = cuentaPuntosRepository.findByClienteId(clienteId)
+    private void registrarMovimiento(String clienteId, String comercioId, String pedidoId, TipoMovimiento tipo, int puntos) {
+        CuentaPuntos cuenta = cuentaPuntosRepository.findByClienteIdAndComercioId(clienteId, comercioId)
                 .orElseGet(() -> CuentaPuntos.builder()
                         .clienteId(clienteId)
+                        .comercioId(comercioId)
                         .saldo(0)
                         .movimientos(new ArrayList<>())
                         .build());

@@ -3,11 +3,17 @@ package es.delivery.manager.pedido.infrastructure.controller;
 import es.delivery.manager.contracts.model.EstadoPedido;
 import es.delivery.manager.contracts.model.TipoUsuario;
 import es.delivery.manager.pedido.application.service.ComercioNoOperativoException;
+import es.delivery.manager.pedido.application.service.CuponNoUsableException;
+import es.delivery.manager.pedido.application.service.CuponYPuntosExcluyentesException;
 import es.delivery.manager.pedido.application.service.ForbiddenOperationException;
 import es.delivery.manager.pedido.application.service.PrecioDesactualizadoException;
+import es.delivery.manager.pedido.application.usecase.AplicarCuponUseCase;
+import es.delivery.manager.pedido.application.usecase.AplicarPuntosUseCase;
 import es.delivery.manager.pedido.application.usecase.CheckoutUseCase;
 import es.delivery.manager.pedido.application.usecase.ClearCarritoUseCase;
 import es.delivery.manager.pedido.application.usecase.GetCarritoUseCase;
+import es.delivery.manager.pedido.application.usecase.QuitarCuponUseCase;
+import es.delivery.manager.pedido.application.usecase.QuitarPuntosUseCase;
 import es.delivery.manager.pedido.application.usecase.UpdateCarritoUseCase;
 import es.delivery.manager.pedido.domain.model.Carrito;
 import es.delivery.manager.pedido.domain.model.ItemCarrito;
@@ -32,6 +38,7 @@ import java.util.Optional;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -65,6 +72,14 @@ class CarritoControllerIntegrationTest {
     private ClearCarritoUseCase clearCarritoUseCase;
     @MockBean
     private CheckoutUseCase checkoutUseCase;
+    @MockBean
+    private AplicarCuponUseCase aplicarCuponUseCase;
+    @MockBean
+    private QuitarCuponUseCase quitarCuponUseCase;
+    @MockBean
+    private AplicarPuntosUseCase aplicarPuntosUseCase;
+    @MockBean
+    private QuitarPuntosUseCase quitarPuntosUseCase;
     @MockBean
     private AuthServiceClient authServiceClient;
 
@@ -126,6 +141,78 @@ class CarritoControllerIntegrationTest {
                 .andExpect(jsonPath("$.comercioId").value("comercio-1"))
                 .andExpect(jsonPath("$.codigoCupon").value("PROMO10"))
                 .andExpect(jsonPath("$.puntosAplicados").value(100));
+    }
+
+    @Test
+    void aplicarCuponDevuelveElPorcentaje() throws Exception {
+        tokenValidoDeCliente();
+        when(aplicarCuponUseCase.aplicarCupon(any(), org.mockito.ArgumentMatchers.eq("PROMO10")))
+                .thenReturn(new BigDecimal("10"));
+
+        mockMvc.perform(post("/api/carrito/cupon")
+                        .header("Authorization", BEARER)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"codigo\": \"PROMO10\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.codigo").value("PROMO10"))
+                .andExpect(jsonPath("$.porcentajeDescuento").value(10));
+    }
+
+    @Test
+    void aplicarCuponNoUsableSeTraduceEn400() throws Exception {
+        tokenValidoDeCliente();
+        when(aplicarCuponUseCase.aplicarCupon(any(), anyString()))
+                .thenThrow(new CuponNoUsableException("CADUCADO"));
+
+        mockMvc.perform(post("/api/carrito/cupon")
+                        .header("Authorization", BEARER)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"codigo\": \"CADUCADO\"}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void quitarCuponDevuelve204() throws Exception {
+        tokenValidoDeCliente();
+
+        mockMvc.perform(delete("/api/carrito/cupon").header("Authorization", BEARER))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void aplicarPuntosDevuelveElDescuento() throws Exception {
+        tokenValidoDeCliente();
+        when(aplicarPuntosUseCase.aplicarPuntos(any(), org.mockito.ArgumentMatchers.eq(100)))
+                .thenReturn(new BigDecimal("1.00"));
+
+        mockMvc.perform(post("/api/carrito/puntos")
+                        .header("Authorization", BEARER)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"puntos\": 100}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.puntos").value(100))
+                .andExpect(jsonPath("$.descuentoEuros").value(1.00));
+    }
+
+    @Test
+    void aplicarPuntosConCuponYaAplicadoSeTraduceEn400() throws Exception {
+        tokenValidoDeCliente();
+        when(aplicarPuntosUseCase.aplicarPuntos(any(), org.mockito.ArgumentMatchers.anyInt()))
+                .thenThrow(new CuponYPuntosExcluyentesException());
+
+        mockMvc.perform(post("/api/carrito/puntos")
+                        .header("Authorization", BEARER)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"puntos\": 100}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void quitarPuntosDevuelve204() throws Exception {
+        tokenValidoDeCliente();
+
+        mockMvc.perform(delete("/api/carrito/puntos").header("Authorization", BEARER))
+                .andExpect(status().isNoContent());
     }
 
     @Test

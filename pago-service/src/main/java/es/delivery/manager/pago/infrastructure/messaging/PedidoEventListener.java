@@ -27,6 +27,7 @@ public class PedidoEventListener {
                 message.getPedidoId(),
                 message.getComercioId(),
                 message.getClienteId(),
+                message.getTarjetaId(),
                 message.getTotal());
     }
 

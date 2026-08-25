@@ -1,4 +1,4 @@
-<div class="carrito-page">
+<div class="carrito-page page-stack">
   <h1>Mi carrito</h1>
 
   @if (loading()) {
@@ -18,25 +18,59 @@
       }
     </ui-card>
 
+    @if (!c.puntosAplicados) {
+      <ui-card class="carrito-page__cupon">
+        @if (c.codigoCupon) {
+          <span class="carrito-page__cupon-aplicado">Cupón <strong>{{ c.codigoCupon }}</strong> aplicado</span>
+          <ui-button variant="ghost" (clicked)="quitarCupon()">Quitar</ui-button>
+        } @else {
+          <ui-input label="Código de cupón" [value]="codigoCuponInput()" (valueChange)="codigoCuponInput.set($event)" />
+          <ui-button [loading]="aplicandoCupon()" (clicked)="aplicarCupon()">Aplicar</ui-button>
+        }
+      </ui-card>
+    }
+
+    @if (!c.codigoCupon) {
+      <ui-card class="carrito-page__cupon">
+        @if (c.puntosAplicados) {
+          <span class="carrito-page__cupon-aplicado">
+            Usando <strong>{{ c.puntosAplicados }}</strong> puntos (-{{ (descuentoPuntosEuros() ?? 0).toFixed(2) }} €)
+          </span>
+          <ui-button variant="ghost" (clicked)="quitarPuntos()">Quitar</ui-button>
+        } @else if (saldoPuntos() > 0) {
+          <ui-input
+            label="Canjear puntos (tienes {{ saldoPuntos() }})"
+            type="number"
+            [value]="puntosInput()"
+            (valueChange)="puntosInput.set($event)"
+          />
+          <ui-button [loading]="aplicandoPuntos()" (clicked)="aplicarPuntos()">Aplicar</ui-button>
+        }
+      </ui-card>
+    }
+
     <ui-card class="carrito-page__resumen">
-      @if (c.subtotal !== undefined) {
-        <div class="carrito-page__linea">
-          <span>Subtotal</span>
-          <span>{{ c.subtotal!.toFixed(2) }} €</span>
-        </div>
-      }
-      @if (c.descuento) {
+      <div class="carrito-page__linea">
+        <span>Subtotal</span>
+        <span>{{ subtotal().toFixed(2) }} €</span>
+      </div>
+      @if (descuento() > 0) {
         <div class="carrito-page__linea carrito-page__linea--descuento">
-          <span>Descuento</span>
-          <span>-{{ c.descuento!.toFixed(2) }} €</span>
+          <span>
+            Descuento
+            @if (c.codigoCupon) {
+              ({{ c.codigoCupon }})
+            } @else if (c.puntosAplicados) {
+              ({{ c.puntosAplicados }} puntos)
+            }
+          </span>
+          <span>-{{ descuento().toFixed(2) }} €</span>
         </div>
       }
-      @if (c.total !== undefined) {
-        <div class="carrito-page__linea carrito-page__linea--total">
-          <span>Total</span>
-          <span>{{ c.total!.toFixed(2) }} €</span>
-        </div>
-      }
+      <div class="carrito-page__linea carrito-page__linea--total">
+        <span>Total</span>
+        <span>{{ total().toFixed(2) }} €</span>
+      </div>
     </ui-card>
 
     <div class="carrito-page__acciones">

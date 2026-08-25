@@ -9,6 +9,7 @@ export interface Comercio {
   direccion: string;
   telefono: string;
   email: string;
+  valorPuntoEuros?: number;
   [key: string]: unknown;
 }
 
@@ -17,6 +18,7 @@ export interface ActualizarComercioRequest {
   direccion?: string;
   telefono?: string;
   email?: string;
+  valorPuntoEuros?: number;
 }
 
 @Injectable({ providedIn: 'root' })

@@ -21,61 +21,64 @@ import { PEDIDOS_POLLING_MS } from '../../../../shared/constants/polling.constan
   standalone: true,
   imports: [CommonModule, PedidoRowComponent, AceptarRechazarModalComponent, SpinnerComponent, IconComponent],
   template: `
-    <h2 class="page-title">Bandeja de pedidos</h2>
+    <div class="page-stack">
+      <h2 class="page-title">Bandeja de pedidos</h2>
 
-    <div class="filter-bar">
-      <label for="estado-select">Estado</label>
-      <select
-        id="estado-select"
-        class="filter-select"
-        [value]="estadoSeleccionado()"
-        (change)="onEstadoChange($event)"
-      >
-        @for (estado of estados; track estado) {
-          <option [value]="estado">{{ estado }}</option>
-        }
-      </select>
+      <div class="filter-bar">
+        <label for="estado-select">Estado</label>
+        <select
+          id="estado-select"
+          class="filter-select"
+          [value]="estadoSeleccionado()"
+          (change)="onEstadoChange($event)"
+        >
+          @for (estado of estados; track estado) {
+            <option [value]="estado">{{ estado }}</option>
+          }
+        </select>
+      </div>
+
+      @if (loading()) {
+        <div class="loading-state"><app-spinner></app-spinner></div>
+      }
+
+      @if (!loading() && pedidos().length === 0) {
+        <div class="empty-state">
+          <app-icon name="inbox" [size]="32"></app-icon>
+          <p>No hay pedidos en estado {{ estadoSeleccionado() }}.</p>
+        </div>
+      }
+
+      @if (pedidos().length > 0) {
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Nº pedido</th>
+                <th>Estado</th>
+                <th>Items</th>
+                <th>Total</th>
+                <th>Fecha creación</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (pedido of pedidos(); track pedido.id) {
+                <tr
+                  app-pedido-row
+                  [pedido]="pedido"
+                  [canGestionar]="canGestionar()"
+                  [canAnular]="canAnular()"
+                  (aceptar)="abrirModal('aceptar', pedido)"
+                  (rechazar)="abrirModal('rechazar', pedido)"
+                  (anular)="anularPedido(pedido)"
+                ></tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
     </div>
-
-    @if (loading()) {
-      <div class="loading-state"><app-spinner></app-spinner></div>
-    }
-
-    @if (!loading() && pedidos().length === 0) {
-      <div class="empty-state">
-        <app-icon name="inbox" [size]="32"></app-icon>
-        <p>No hay pedidos en estado {{ estadoSeleccionado() }}.</p>
-      </div>
-    }
-
-    @if (pedidos().length > 0) {
-      <div class="table-wrapper">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>Nº pedido</th>
-              <th>Estado</th>
-              <th>Items</th>
-              <th>Total</th>
-              <th>Fecha creación</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (pedido of pedidos(); track pedido.id) {
-              <app-pedido-row
-                [pedido]="pedido"
-                [canGestionar]="canGestionar()"
-                [canAnular]="canAnular()"
-                (aceptar)="abrirModal('aceptar', pedido)"
-                (rechazar)="abrirModal('rechazar', pedido)"
-                (anular)="anularPedido(pedido)"
-              ></app-pedido-row>
-            }
-          </tbody>
-        </table>
-      </div>
-    }
 
     <app-aceptar-rechazar-modal
       [visible]="modalVisible()"

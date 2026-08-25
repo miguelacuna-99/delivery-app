@@ -3,9 +3,11 @@ package es.delivery.manager.comercio.infrastructure.controller;
 import es.delivery.manager.comercio.application.usecase.CreateProductoUseCase;
 import es.delivery.manager.comercio.application.usecase.DeleteProductoUseCase;
 import es.delivery.manager.comercio.application.usecase.ListProductosUseCase;
+import es.delivery.manager.comercio.application.usecase.UpdateDisponibilidadProductoUseCase;
 import es.delivery.manager.comercio.application.usecase.UpdateProductoUseCase;
 import es.delivery.manager.comercio.domain.model.Producto;
 import es.delivery.manager.comercio.domain.model.TokenClaims;
+import es.delivery.manager.comercio.infrastructure.controller.dto.ActualizarDisponibilidadRequest;
 import es.delivery.manager.comercio.infrastructure.controller.dto.ProductoRequest;
 import es.delivery.manager.comercio.infrastructure.controller.dto.ProductoResponse;
 import es.delivery.manager.comercio.infrastructure.mapper.ProductoMapper;
@@ -23,6 +25,7 @@ public class ProductoController {
 
     private final CreateProductoUseCase createProductoUseCase;
     private final UpdateProductoUseCase updateProductoUseCase;
+    private final UpdateDisponibilidadProductoUseCase updateDisponibilidadProductoUseCase;
     private final DeleteProductoUseCase deleteProductoUseCase;
     private final ListProductosUseCase listProductosUseCase;
     private final ProductoMapper productoMapper;
@@ -47,6 +50,14 @@ public class ProductoController {
     public ProductoResponse updateProducto(@PathVariable String id, @RequestBody ProductoRequest request) {
         TokenClaims caller = RequestSecurityContext.require();
         Producto producto = updateProductoUseCase.updateProducto(caller, id, productoMapper.toDomain(request));
+        return productoMapper.toResponse(producto);
+    }
+
+    // ROOT o ADMIN activan/desactivan un producto sin tocar el resto de sus datos
+    @PatchMapping("/api/productos/{id}/disponibilidad")
+    public ProductoResponse updateDisponibilidad(@PathVariable String id, @RequestBody ActualizarDisponibilidadRequest request) {
+        TokenClaims caller = RequestSecurityContext.require();
+        Producto producto = updateDisponibilidadProductoUseCase.updateDisponibilidad(caller, id, request.isDisponible());
         return productoMapper.toResponse(producto);
     }
 

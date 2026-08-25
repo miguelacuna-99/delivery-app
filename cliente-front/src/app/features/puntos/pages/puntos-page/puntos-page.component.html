@@ -1,4 +1,4 @@
-<div class="puntos-page">
+<div class="puntos-page page-stack">
   <h1>Mis puntos</h1>
 
   @if (loading()) {
@@ -8,19 +8,21 @@
   } @else {
     <p class="puntos-page__saldo">Saldo actual: <strong>{{ saldo() }}</strong> puntos</p>
 
-    <h2>Historial</h2>
-    @if (historial().length === 0) {
-      <p>Todavia no tienes movimientos de puntos.</p>
-    } @else {
-      <ul class="puntos-page__historial">
-        @for (item of historial(); track $index) {
-          <li>
-            <span>{{ item.fecha ?? '—' }}</span>
-            <span>{{ item.motivo ?? item.tipo ?? '' }}</span>
-            <span>{{ item.puntos ?? 0 }} pts</span>
-          </li>
-        }
-      </ul>
-    }
+    <section class="puntos-page__historial-section">
+      <h2>Historial</h2>
+      @if (historial().length === 0) {
+        <p>Todavia no tienes movimientos de puntos.</p>
+      } @else {
+        <ul class="puntos-page__historial">
+          @for (item of historial(); track $index) {
+            <li>
+              <span>{{ item.fecha ?? '—' }}</span>
+              <span>{{ item.motivo ?? item.tipo ?? '' }}</span>
+              <span>{{ item.puntos ?? 0 }} pts</span>
+            </li>
+          }
+        </ul>
+      }
+    </section>
   }
 </div>

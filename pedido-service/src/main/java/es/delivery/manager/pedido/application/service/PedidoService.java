@@ -18,7 +18,8 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class PedidoService implements ListPedidosClienteUseCase, ListPedidosComercioUseCase,
-        AceptarPedidoUseCase, RechazarPedidoUseCase, EntregarPedidoUseCase, AnularPedidoUseCase {
+        AceptarPedidoUseCase, RechazarPedidoUseCase, EntregarPedidoUseCase, AnularPedidoUseCase,
+        PagarPedidoUseCase {
 
     private final PedidoRepository pedidoRepository;
     private final PedidoEventPublisher eventPublisher;
@@ -47,7 +48,22 @@ public class PedidoService implements ListPedidosClienteUseCase, ListPedidosCome
         Pedido saved = pedidoRepository.save(pedido);
 
         publish(EventType.PEDIDO_ACEPTADO, saved);
-        // El pago se solicita al aceptar: pago-service consume pago.solicitado
+        return saved;
+    }
+
+    @Override
+    public Pedido pagar(TokenClaims caller, String pedidoId, String tarjetaId) {
+        CarritoService.checkCliente(caller);
+        if (tarjetaId == null || tarjetaId.isBlank()) {
+            throw new TarjetaRequeridaException();
+        }
+        Pedido pedido = getPedidoDelCliente(caller, pedidoId);
+        checkEstado(pedido, EstadoPedido.ACEPTADO, EstadoPedido.PAGADO);
+
+        pedido.setTarjetaId(tarjetaId);
+        Pedido saved = pedidoRepository.save(pedido);
+
+        // El cliente dispara el cobro: pago-service consume pago.solicitado
         publish(EventType.PAGO_SOLICITADO, saved);
         return saved;
     }
@@ -103,6 +119,13 @@ public class PedidoService implements ListPedidosClienteUseCase, ListPedidosCome
         // Multi-tenant: nunca operar sobre pedidos de otro comercio
         return pedidoRepository.findById(pedidoId)
                 .filter(p -> p.getComercioId().equals(caller.getComercioId()))
+                .orElseThrow(() -> new PedidoNotFoundException(pedidoId));
+    }
+
+    private Pedido getPedidoDelCliente(TokenClaims caller, String pedidoId) {
+        // Un cliente nunca puede pagar el pedido de otro cliente
+        return pedidoRepository.findById(pedidoId)
+                .filter(p -> p.getClienteId().equals(caller.getUserId()))
                 .orElseThrow(() -> new PedidoNotFoundException(pedidoId));
     }
 

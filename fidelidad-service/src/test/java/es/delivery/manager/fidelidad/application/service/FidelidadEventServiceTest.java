@@ -39,6 +39,7 @@ class FidelidadEventServiceTest {
     private CuentaPuntos cuenta(int saldo, List<MovimientoPuntos> movimientos) {
         return CuentaPuntos.builder()
                 .clienteId("cliente-1")
+                .comercioId("comercio-1")
                 .saldo(saldo)
                 .movimientos(new ArrayList<>(movimientos))
                 .build();
@@ -82,7 +83,7 @@ class FidelidadEventServiceTest {
 
     @Test
     void pedidoCreadoReservaPuntosYUsoDeCupon() {
-        when(cuentaPuntosRepository.findByClienteId("cliente-1")).thenReturn(Optional.of(cuenta(200, List.of())));
+        when(cuentaPuntosRepository.findByClienteIdAndComercioId("cliente-1", "comercio-1")).thenReturn(Optional.of(cuenta(200, List.of())));
         when(cuentaPuntosRepository.save(any(CuentaPuntos.class))).thenAnswer(inv -> inv.getArgument(0));
         Cupon cupon = cuponCon(-1);
         when(cuponRepository.findByCodigo("PROMO10")).thenReturn(Optional.of(cupon));
@@ -100,7 +101,7 @@ class FidelidadEventServiceTest {
 
     @Test
     void pedidoRechazadoDevuelvePuntosYUsoDeCupon() {
-        when(cuentaPuntosRepository.findByClienteId("cliente-1"))
+        when(cuentaPuntosRepository.findByClienteIdAndComercioId("cliente-1", "comercio-1"))
                 .thenReturn(Optional.of(cuenta(100, List.of(movimiento(TipoMovimiento.CANJEADO, -100)))));
         when(cuentaPuntosRepository.save(any(CuentaPuntos.class))).thenAnswer(inv -> inv.getArgument(0));
         Cupon cupon = cuponCon(1);
@@ -117,7 +118,7 @@ class FidelidadEventServiceTest {
 
     @Test
     void pedidoCanceladoDevuelvePuntosYLiberaElCupon() {
-        when(cuentaPuntosRepository.findByClienteId("cliente-1"))
+        when(cuentaPuntosRepository.findByClienteIdAndComercioId("cliente-1", "comercio-1"))
                 .thenReturn(Optional.of(cuenta(100, List.of(movimiento(TipoMovimiento.CANJEADO, -100)))));
         when(cuentaPuntosRepository.save(any(CuentaPuntos.class))).thenAnswer(inv -> inv.getArgument(0));
         Cupon cupon = cuponCon(1);
@@ -135,7 +136,7 @@ class FidelidadEventServiceTest {
 
     @Test
     void unaCancelacionRepetidaNoDevuelveLosPuntosDosVeces() {
-        when(cuentaPuntosRepository.findByClienteId("cliente-1")).thenReturn(Optional.of(cuenta(200, List.of(
+        when(cuentaPuntosRepository.findByClienteIdAndComercioId("cliente-1", "comercio-1")).thenReturn(Optional.of(cuenta(200, List.of(
                 movimiento(TipoMovimiento.CANJEADO, -100),
                 movimiento(TipoMovimiento.DEVUELTO, 100)))));
 
@@ -147,7 +148,7 @@ class FidelidadEventServiceTest {
 
     @Test
     void pagoCompletadoOtorgaUnPuntoPorEuro() {
-        when(cuentaPuntosRepository.findByClienteId("cliente-1")).thenReturn(Optional.empty());
+        when(cuentaPuntosRepository.findByClienteIdAndComercioId("cliente-1", "comercio-1")).thenReturn(Optional.empty());
         when(cuentaPuntosRepository.save(any(CuentaPuntos.class))).thenAnswer(inv -> inv.getArgument(0));
 
         fidelidadEventService.pagoCompletado(pagoMessage(new BigDecimal("18.80")));
@@ -161,7 +162,7 @@ class FidelidadEventServiceTest {
 
     @Test
     void unPagoCompletadoRepetidoNoOtorgaPuntosDosVeces() {
-        when(cuentaPuntosRepository.findByClienteId("cliente-1"))
+        when(cuentaPuntosRepository.findByClienteIdAndComercioId("cliente-1", "comercio-1"))
                 .thenReturn(Optional.of(cuenta(18, List.of(movimiento(TipoMovimiento.GANADO, 18)))));
 
         fidelidadEventService.pagoCompletado(pagoMessage(new BigDecimal("18.80")));
@@ -171,7 +172,7 @@ class FidelidadEventServiceTest {
 
     @Test
     void devolucionCompletadaRetiraLosPuntosGanados() {
-        when(cuentaPuntosRepository.findByClienteId("cliente-1"))
+        when(cuentaPuntosRepository.findByClienteIdAndComercioId("cliente-1", "comercio-1"))
                 .thenReturn(Optional.of(cuenta(18, List.of(movimiento(TipoMovimiento.GANADO, 18)))));
         when(cuentaPuntosRepository.save(any(CuentaPuntos.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -186,7 +187,7 @@ class FidelidadEventServiceTest {
 
     @Test
     void devolucionCompletadaEsIdempotente() {
-        when(cuentaPuntosRepository.findByClienteId("cliente-1")).thenReturn(Optional.of(cuenta(0, List.of(
+        when(cuentaPuntosRepository.findByClienteIdAndComercioId("cliente-1", "comercio-1")).thenReturn(Optional.of(cuenta(0, List.of(
                 movimiento(TipoMovimiento.GANADO, 18),
                 movimiento(TipoMovimiento.RETIRADO, -18)))));
 

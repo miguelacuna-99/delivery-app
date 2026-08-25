@@ -2,6 +2,8 @@ package es.delivery.manager.auth.infrastructure.controller;
 
 import es.delivery.manager.auth.application.service.ForbiddenOperationException;
 import es.delivery.manager.auth.application.usecase.CreateUsuarioUseCase;
+import es.delivery.manager.auth.application.usecase.DeleteUsuarioUseCase;
+import es.delivery.manager.auth.application.usecase.ListUsuariosUseCase;
 import es.delivery.manager.auth.application.usecase.ProvisionRootUseCase;
 import es.delivery.manager.auth.application.usecase.ValidateTokenUseCase;
 import es.delivery.manager.auth.domain.model.TokenClaims;
@@ -16,6 +18,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/usuarios")
 @RequiredArgsConstructor
@@ -23,6 +27,8 @@ public class UsuarioController {
 
     private final ProvisionRootUseCase provisionRootUseCase;
     private final CreateUsuarioUseCase createUsuarioUseCase;
+    private final ListUsuariosUseCase listUsuariosUseCase;
+    private final DeleteUsuarioUseCase deleteUsuarioUseCase;
     private final ValidateTokenUseCase validateTokenUseCase;
     private final UsuarioMapper usuarioMapper;
 
@@ -52,6 +58,25 @@ public class UsuarioController {
         TokenClaims caller = validateBearer(authorization);
         Usuario usuario = createUsuarioUseCase.createUsuario(caller, usuarioMapper.toDomain(request));
         return ResponseEntity.status(HttpStatus.CREATED).body(usuarioMapper.toResponse(usuario));
+    }
+
+    // Solo ROOT ve la lista de usuarios de su comercio
+    @GetMapping
+    public List<UsuarioResponse> listUsuarios(@RequestHeader("Authorization") String authorization) {
+        TokenClaims caller = validateBearer(authorization);
+        return listUsuariosUseCase.listByComercio(caller).stream()
+                .map(usuarioMapper::toResponse)
+                .toList();
+    }
+
+    // Solo ROOT elimina usuarios de su comercio
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteUsuario(
+            @RequestHeader("Authorization") String authorization,
+            @PathVariable String id) {
+        TokenClaims caller = validateBearer(authorization);
+        deleteUsuarioUseCase.deleteUsuario(caller, id);
+        return ResponseEntity.noContent().build();
     }
 
     private TokenClaims validateBearer(String authorization) {

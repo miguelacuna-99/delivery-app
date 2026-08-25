@@ -56,6 +56,26 @@ a {
   margin: 0 0 var(--space-4);
 }
 
+/* ---------- Contenedor de página ----------
+   Separación vertical estándar entre los bloques hermanos de una página
+   (título, tarjetas de formulario, tablas, estados vacío/carga...). Sustituye
+   a los margin-bottom sueltos por bloque, que quedaban inconsistentes o
+   directamente ausentes entre unos bloques y otros. */
+.page-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+
+  > .page-title,
+  > .page-subtitle {
+    margin-bottom: 0;
+  }
+
+  > .filter-bar {
+    margin-bottom: 0;
+  }
+}
+
 /* ---------- Barra de filtros ---------- */
 .filter-bar {
   display: flex;

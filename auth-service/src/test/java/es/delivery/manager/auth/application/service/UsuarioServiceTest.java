@@ -127,6 +127,62 @@ class UsuarioServiceTest {
     }
 
     @Test
+    void rootListaLosUsuariosDeSuComercio() {
+        Usuario u1 = nuevoUsuario(TipoUsuario.PERSONAL);
+        when(usuarioRepository.findByComercioId("comercio-1")).thenReturn(java.util.List.of(u1));
+
+        var lista = usuarioService.listByComercio(caller(TipoUsuario.ROOT));
+
+        assertThat(lista).containsExactly(u1);
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = TipoUsuario.class, names = {"ADMIN", "PERSONAL", "REPARTIDOR", "CLIENTE"})
+    void soloRootPuedeListarUsuarios(TipoUsuario tipo) {
+        assertThatThrownBy(() -> usuarioService.listByComercio(caller(tipo)))
+                .isInstanceOf(ForbiddenOperationException.class);
+    }
+
+    @Test
+    void rootEliminaUnUsuarioDeSuComercio() {
+        Usuario objetivo = nuevoUsuario(TipoUsuario.PERSONAL);
+        objetivo.setId("usuario-2");
+        objetivo.setComercioId("comercio-1");
+        when(usuarioRepository.findById("usuario-2")).thenReturn(Optional.of(objetivo));
+
+        usuarioService.deleteUsuario(caller(TipoUsuario.ROOT), "usuario-2");
+
+        verify(usuarioRepository).deleteById("usuario-2");
+    }
+
+    @Test
+    void rootNoPuedeEliminarseASiMismo() {
+        assertThatThrownBy(() -> usuarioService.deleteUsuario(caller(TipoUsuario.ROOT), "caller-id"))
+                .isInstanceOf(AutoEliminacionException.class);
+        verify(usuarioRepository, never()).deleteById(anyString());
+    }
+
+    @Test
+    void eliminarUsuarioDeOtroComercioSeTrataComoNotFound() {
+        Usuario ajeno = nuevoUsuario(TipoUsuario.PERSONAL);
+        ajeno.setId("usuario-3");
+        ajeno.setComercioId("otro-comercio");
+        when(usuarioRepository.findById("usuario-3")).thenReturn(Optional.of(ajeno));
+
+        assertThatThrownBy(() -> usuarioService.deleteUsuario(caller(TipoUsuario.ROOT), "usuario-3"))
+                .isInstanceOf(UsuarioNotFoundException.class);
+        verify(usuarioRepository, never()).deleteById(anyString());
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = TipoUsuario.class, names = {"ADMIN", "PERSONAL", "REPARTIDOR", "CLIENTE"})
+    void soloRootPuedeEliminarUsuarios(TipoUsuario tipo) {
+        assertThatThrownBy(() -> usuarioService.deleteUsuario(caller(tipo), "usuario-2"))
+                .isInstanceOf(ForbiddenOperationException.class);
+        verify(usuarioRepository, never()).deleteById(anyString());
+    }
+
+    @Test
     void provisionRootFuerzaTipoRootYMustChangePassword() {
         stubGuardado();
         Usuario root = nuevoUsuario(TipoUsuario.PERSONAL); // tipo del request se ignora

@@ -1,6 +1,13 @@
 <div class="ui-toast-container">
-  @for (toast of toastService.toasts(); track toast.id) {
-    <div class="ui-toast" [class]="'ui-toast--' + toast.type" role="status" (click)="dismiss(toast.id)">
+  @for (toast of toastsOrdenados(); track toast.id; let i = $index) {
+    <div
+      class="ui-toast"
+      [class]="'ui-toast--' + toast.type"
+      [class.ui-toast--removing]="toast.removing"
+      [style.--stack-index]="i"
+      role="status"
+      (click)="dismiss(toast.id)"
+    >
       <span class="ui-toast__icon" aria-hidden="true">
         @switch (toast.type) {
           @case ('success') {

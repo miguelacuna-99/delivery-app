@@ -7,6 +7,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 
 @Data
@@ -25,4 +26,5 @@ public class ComercioResponse {
     private EstadoSuscripcion estadoSuscripcion;
     private Instant fechaInicioSuscripcion;
     private Instant fechaFinSuscripcion;
+    private BigDecimal valorPuntoEuros;
 }

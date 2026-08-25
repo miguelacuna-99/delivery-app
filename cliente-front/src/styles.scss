@@ -71,6 +71,21 @@ input:focus-visible,
   border-radius: var(--radius-sm);
 }
 
+/* ---------- Contenedor de página ----------
+   Separación vertical estándar entre los bloques hermanos de una página
+   (título, tarjetas apiladas, secciones...). Sustituye a los margin-bottom
+   sueltos por bloque, que quedaban inconsistentes o ausentes entre unos y otros. */
+.page-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+
+  > h1,
+  > h2 {
+    margin-bottom: 0;
+  }
+}
+
 /* Tile de iniciales: sustituye a fotos de producto/comercio que no existen.
    La variante se elige de forma deterministica segun el id (ver avatar.util.ts). */
 .avatar-tile {

@@ -22,6 +22,7 @@ public class PedidoController {
     private final RechazarPedidoUseCase rechazarPedidoUseCase;
     private final EntregarPedidoUseCase entregarPedidoUseCase;
     private final AnularPedidoUseCase anularPedidoUseCase;
+    private final PagarPedidoUseCase pagarPedidoUseCase;
     private final PedidoMapper pedidoMapper;
 
     // Historial del cliente autenticado
@@ -47,6 +48,13 @@ public class PedidoController {
         TokenClaims caller = RequestSecurityContext.require();
         return pedidoMapper.toResponse(
                 aceptarPedidoUseCase.aceptar(caller, id, request.getTiempoEstimadoMin()));
+    }
+
+    // El cliente dispara el cobro de su propio pedido, eligiendo la tarjeta
+    @PostMapping("/{id}/pagar")
+    public PedidoResponse pagar(@PathVariable String id, @RequestBody PagarPedidoRequest request) {
+        TokenClaims caller = RequestSecurityContext.require();
+        return pedidoMapper.toResponse(pagarPedidoUseCase.pagar(caller, id, request.getTarjetaId()));
     }
 
     @PostMapping("/{id}/rechazar")

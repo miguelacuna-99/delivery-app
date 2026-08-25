@@ -97,7 +97,7 @@ Exchange unico: `delivery.exchange` (TopicExchange).
 
 ### Auth flow
 
-1. Login en `auth-service` → JWT con claims `userId`, `username`, `comercioId` (null para clientes), `tipo` (ROOT / ADMIN / PERSONAL / REPARTIDOR / CLIENTE)
+1. Login en `auth-service` → JWT con claims `userId`, `username`, `comercioId`, `tipo` (ROOT / ADMIN / PERSONAL / REPARTIDOR / CLIENTE). El `comercioId` nunca es null: cada CLIENTE tambien queda atado a un unico comercio desde su registro (cada web se vende a un unico negocio)
 2. Los demas servicios validan el token via HTTP `auth-service /auth/validate` (JwtAuthInterceptor + AuthServiceClient)
 3. Claims en `RequestSecurityContext` (ThreadLocal); toda query de usuario de comercio se filtra por su `comercioId`
 4. El usuario `ROOT` de cada comercio lo provisiona la plataforma (`mustChangePassword = true`); cambia la contrasena via correo
@@ -111,10 +111,12 @@ Endpoints de auth-service (implementados):
 | `POST /auth/validate` | publico (lo llaman los demas servicios) | 200 valid=true + claims, o valid=false |
 | `POST /auth/password/forgot` | publico | Siempre 204 (no revela si el mail existe) |
 | `POST /auth/password/reset` | publico | Token de un solo uso; 400 si usado/caducado |
-| `POST /api/clientes/registro` | publico | Alta de cliente |
+| `POST /api/clientes/registro` | publico | Alta de cliente; `comercioId` obligatorio (el cliente elige su negocio al registrarse) |
 | `PUT /api/clientes/me/contacto` | Bearer CLIENTE | El cliente modifica sus datos de contacto |
 | `POST /api/usuarios/root` | header `X-Platform-Key` (`platform.api-key`) | La plataforma provisiona el ROOT de un comercio; dispara correo de bienvenida con URL de reseteo |
 | `POST /api/usuarios` | Bearer ROOT o ADMIN | ROOT crea cualquier tipo de usuario de comercio (ROOT/ADMIN/PERSONAL/REPARTIDOR); ADMIN solo PERSONAL/REPARTIDOR; CLIENTE nunca por aqui. El comercioId siempre sale del token |
+| `GET /api/usuarios` | Bearer ROOT | Lista los usuarios del comercio del token |
+| `DELETE /api/usuarios/{id}` | Bearer ROOT | Elimina un usuario de su comercio; 400 si intenta eliminarse a si mismo |
 
 ### Estados del pedido
 
@@ -143,7 +145,9 @@ Los Dockerfiles usan la **raiz del repo como contexto de build** (compilan `deli
 - Suscripcion del comercio: `PlanSuscripcion` (MENSUAL/ANUAL) + `EstadoSuscripcion` (ACTIVA/EN_GRACIA/SUSPENDIDA). `Comercio.esOperativo()` centraliza la regla — ACTIVA y EN_GRACIA operan, SUSPENDIDA no. Solo la plataforma (`X-Platform-Key`) da de alta comercios, suspende y renueva
 - Fidelidad funciona como reserva → consolidacion: reserva al crear pedido, consolida en `pedido.aceptado`, devuelve en `pago.fallido` / `pedido.rechazado`
 - Conversion de fidelidad: 1 punto = 0,01 EUR de descuento al canjear; se gana 1 punto por cada EUR pagado (`pago.completado`)
+- **Los puntos de fidelidad son por (cliente, comercio), no globales.** `CuentaPuntos` tiene indice unico compuesto `clienteId`+`comercioId`; coherente con que cada cliente esta atado a un unico comercio, pero deja el modelo listo si algun dia un mismo cliente pudiera operar en mas de un negocio
 - Cupones: estado `ACTIVO / ANULADO / CADUCADO` + `fechaCaducidad`; solo el ADMIN del comercio crea o anula cupones (`Cupon.esUsable(ahora)` centraliza la validacion)
+- **Aplicar un cupon al carrito se valida al momento, no solo en el checkout.** `POST /api/carrito/cupon` (Bearer CLIENTE) llama a `fidelidad-service` de inmediato y solo lo persiste si es usable; `PUT /api/carrito` (edicion de items) nunca puede fijar un cupon sin pasar por ahi — conserva siempre el `codigoCupon` ya validado, ignorando el que venga en el body
 - MapStruct requiere el orden de annotation processors: Lombok → MapStruct → lombok-mapstruct-binding (ya configurado en todos los poms)
 
 ## Testing

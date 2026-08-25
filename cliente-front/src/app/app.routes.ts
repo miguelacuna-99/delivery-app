@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
 import { guestGuard } from './core/guards/guest.guard';
+import { clienteComercioGuard } from './core/guards/cliente-comercio.guard';
 
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'catalogo' },
@@ -48,6 +49,7 @@ export const routes: Routes = [
     children: [
       {
         path: 'catalogo',
+        canActivate: [clienteComercioGuard],
         loadComponent: () =>
           import('./features/catalogo/pages/comercios-page/comercios-page.component').then(
             (m) => m.ComerciosPageComponent
@@ -55,6 +57,7 @@ export const routes: Routes = [
       },
       {
         path: 'catalogo/:comercioId',
+        canActivate: [clienteComercioGuard],
         loadComponent: () =>
           import('./features/catalogo/pages/comercio-detalle-page/comercio-detalle-page.component').then(
             (m) => m.ComercioDetallePageComponent
@@ -90,6 +93,14 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/puntos/pages/puntos-page/puntos-page.component').then(
             (m) => m.PuntosPageComponent
+          )
+      },
+      {
+        path: 'pagos',
+        canActivate: [authGuard],
+        loadComponent: () =>
+          import('./features/pagos/pages/pagos-page/pagos-page.component').then(
+            (m) => m.PagosPageComponent
           )
       },
       {

@@ -30,4 +30,12 @@ export class UsuarioApiService {
   crear(request: CrearUsuarioRequest): Observable<Usuario> {
     return this.http.post<Usuario>(this.baseUrl, request);
   }
+
+  listar(): Observable<Usuario[]> {
+    return this.http.get<Usuario[]>(this.baseUrl);
+  }
+
+  eliminar(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/${id}`);
+  }
 }

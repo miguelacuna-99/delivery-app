@@ -95,6 +95,37 @@ class ProductoServiceTest {
     }
 
     @Test
+    void updateDisponibilidadCambiaSoloElFlagYConservaElResto() {
+        Producto existente = producto();
+        existente.setId("prod-1");
+        existente.setComercioId("comercio-1");
+        when(productoRepository.findById("prod-1")).thenReturn(Optional.of(existente));
+        when(productoRepository.save(any(Producto.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Producto actualizado = productoService.updateDisponibilidad(caller(TipoUsuario.ADMIN), "prod-1", false);
+
+        assertThat(actualizado.isDisponible()).isFalse();
+        assertThat(actualizado.getNombre()).isEqualTo("Pizza Margarita");
+        assertThat(actualizado.getDescripcion()).isEqualTo("Tomate y mozzarella");
+        assertThat(actualizado.getIngredientes()).isEqualTo("Tomate, mozzarella, albahaca, aceite de oliva");
+        assertThat(actualizado.getImagenUrl()).isEqualTo("https://cdn.example.com/productos/pizza-margarita.jpg");
+        assertThat(actualizado.getPrecio()).isEqualByComparingTo("9.50");
+    }
+
+    @Test
+    void updateDisponibilidadDeOtroComercioSeTrataComoNotFound() {
+        Producto ajeno = producto();
+        ajeno.setId("prod-2");
+        ajeno.setComercioId("comercio-2");
+        when(productoRepository.findById("prod-2")).thenReturn(Optional.of(ajeno));
+
+        assertThatThrownBy(() -> productoService.updateDisponibilidad(caller(TipoUsuario.ROOT), "prod-2", false))
+                .isInstanceOf(ProductoNotFoundException.class);
+
+        verify(productoRepository, never()).save(any());
+    }
+
+    @Test
     void updateProductoDeOtroComercioSeTrataComoNotFound() {
         Producto ajeno = producto();
         ajeno.setId("prod-2");

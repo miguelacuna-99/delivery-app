@@ -19,6 +19,7 @@ import java.util.List;
 public class CuentaPuntos {
     private String id;
     private String clienteId;
+    private String comercioId;
     private int saldo;
     private List<MovimientoPuntos> movimientos;
 }

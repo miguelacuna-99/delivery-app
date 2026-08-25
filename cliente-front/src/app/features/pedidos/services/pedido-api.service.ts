@@ -11,4 +11,8 @@ export class PedidoApiService {
   misPedidos(): Observable<Pedido[]> {
     return this.http.get<Pedido[]>(`${environment.apiBaseUrl}/api/pedidos/me`);
   }
+
+  pagar(pedidoId: string, tarjetaId: string): Observable<Pedido> {
+    return this.http.post<Pedido>(`${environment.apiBaseUrl}/api/pedidos/${pedidoId}/pagar`, { tarjetaId });
+  }
 }

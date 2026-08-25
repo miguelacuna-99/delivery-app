@@ -16,6 +16,13 @@
   font-size: 1.6rem;
 }
 
+.producto-card__imagen {
+  width: 100%;
+  height: 92px;
+  border-radius: var(--radius-md);
+  object-fit: cover;
+}
+
 .producto-card__body {
   flex: 1;
   display: flex;

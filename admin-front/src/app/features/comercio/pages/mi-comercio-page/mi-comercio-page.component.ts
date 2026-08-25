@@ -14,23 +14,32 @@ import { TipoUsuario } from '../../../../core/models/auth.model';
   standalone: true,
   imports: [CommonModule, InputComponent, ButtonComponent, CardComponent, SpinnerComponent],
   template: `
-    <h2 class="page-title">Mi comercio</h2>
+    <div class="page-stack">
+      <h2 class="page-title">Mi comercio</h2>
 
-    @if (loading()) {
-      <div class="loading-state"><app-spinner></app-spinner></div>
-    }
+      @if (loading()) {
+        <div class="loading-state"><app-spinner></app-spinner></div>
+      }
 
-    @if (!loading()) {
-      <app-card class="form-card">
-        <app-input label="Nombre" [value]="nombre()" [disabled]="!canEdit()" (valueChange)="nombre.set($event)"></app-input>
-        <app-input label="Dirección" [value]="direccion()" [disabled]="!canEdit()" (valueChange)="direccion.set($event)"></app-input>
-        <app-input label="Teléfono" [value]="telefono()" [disabled]="!canEdit()" (valueChange)="telefono.set($event)"></app-input>
-        <app-input label="Email" [value]="email()" [disabled]="!canEdit()" (valueChange)="email.set($event)"></app-input>
-        @if (canEdit()) {
-          <app-button [loading]="saving()" (clicked)="guardar()">Guardar cambios</app-button>
-        }
-      </app-card>
-    }
+      @if (!loading()) {
+        <app-card class="form-card">
+          <app-input label="Nombre" [value]="nombre()" [disabled]="!canEdit()" (valueChange)="nombre.set($event)"></app-input>
+          <app-input label="Dirección" [value]="direccion()" [disabled]="!canEdit()" (valueChange)="direccion.set($event)"></app-input>
+          <app-input label="Teléfono" [value]="telefono()" [disabled]="!canEdit()" (valueChange)="telefono.set($event)"></app-input>
+          <app-input label="Email" [value]="email()" [disabled]="!canEdit()" (valueChange)="email.set($event)"></app-input>
+          <app-input
+            label="Valor de cada punto (€)"
+            type="number"
+            [value]="valorPuntoEuros()"
+            [disabled]="!canEdit()"
+            (valueChange)="valorPuntoEuros.set($event)"
+          ></app-input>
+          @if (canEdit()) {
+            <app-button [loading]="saving()" (clicked)="guardar()">Guardar cambios</app-button>
+          }
+        </app-card>
+      }
+    </div>
   `,
   styleUrl: './mi-comercio-page.component.scss'
 })
@@ -46,6 +55,7 @@ export class MiComercioPageComponent {
   readonly direccion = signal('');
   readonly telefono = signal('');
   readonly email = signal('');
+  readonly valorPuntoEuros = signal('');
 
   readonly canEdit = computed(() => {
     const tipo = this.authService.tipo();
@@ -64,6 +74,7 @@ export class MiComercioPageComponent {
         this.direccion.set(comercio.direccion ?? '');
         this.telefono.set(comercio.telefono ?? '');
         this.email.set(comercio.email ?? '');
+        this.valorPuntoEuros.set(comercio.valorPuntoEuros !== undefined ? String(comercio.valorPuntoEuros) : '');
         this.loading.set(false);
       },
       error: () => {
@@ -80,7 +91,8 @@ export class MiComercioPageComponent {
         nombre: this.nombre(),
         direccion: this.direccion(),
         telefono: this.telefono(),
-        email: this.email()
+        email: this.email(),
+        valorPuntoEuros: Number(this.valorPuntoEuros()) || undefined
       })
       .subscribe({
         next: () => {

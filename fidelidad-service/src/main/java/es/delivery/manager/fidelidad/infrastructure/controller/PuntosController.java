@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -31,10 +32,10 @@ public class PuntosController {
 
     // Saldo en el checkout (la llama pedido-service)
     @GetMapping("/{clienteId}/saldo")
-    public SaldoResponse saldo(@PathVariable String clienteId) {
+    public SaldoResponse saldo(@PathVariable String clienteId, @RequestParam String comercioId) {
         return SaldoResponse.builder()
                 .clienteId(clienteId)
-                .saldo(consultarSaldoUseCase.saldoPuntos(clienteId))
+                .saldo(consultarSaldoUseCase.saldoPuntos(clienteId, comercioId))
                 .build();
     }
 }

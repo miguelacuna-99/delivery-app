@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthApiService } from '../../services/auth-api.service';
@@ -7,6 +7,8 @@ import { ButtonComponent } from '../../../../shared/components/button/button.com
 import { InputComponent } from '../../../../shared/components/input/input.component';
 import { CardComponent } from '../../../../shared/components/card/card.component';
 import { ToastService } from '../../../../shared/services/toast.service';
+import { ComercioApiService } from '../../../catalogo/services/comercio-api.service';
+import { Comercio } from '../../../catalogo/models/comercio.model';
 
 @Component({
   selector: 'app-registro-page',
@@ -14,11 +16,14 @@ import { ToastService } from '../../../../shared/services/toast.service';
   templateUrl: './registro-page.component.html',
   styleUrl: './registro-page.component.scss'
 })
-export class RegistroPageComponent {
+export class RegistroPageComponent implements OnInit {
   private readonly authApi = inject(AuthApiService);
+  private readonly comercioApi = inject(ComercioApiService);
   private readonly router = inject(Router);
   private readonly toastService = inject(ToastService);
 
+  readonly comercios = signal<Comercio[]>([]);
+  readonly comercioId = signal('');
   readonly username = signal('');
   readonly password = signal('');
   readonly mail = signal('');
@@ -28,15 +33,27 @@ export class RegistroPageComponent {
   readonly loading = signal(false);
   readonly errorMessage = signal<string | null>(null);
 
+  ngOnInit(): void {
+    this.comercioApi.listar().subscribe({
+      next: (comercios) => this.comercios.set(comercios),
+      error: () => this.toastService.show('No se pudieron cargar los negocios disponibles.', 'error')
+    });
+  }
+
+  onComercioChange(event: Event): void {
+    this.comercioId.set((event.target as HTMLSelectElement).value);
+  }
+
   submit(): void {
     if (
+      !this.comercioId() ||
       !this.username() ||
       !this.password() ||
       !this.mail() ||
       !this.direccionDomicilio() ||
       !this.telefono()
     ) {
-      this.errorMessage.set('Rellena todos los campos.');
+      this.errorMessage.set('Rellena todos los campos, incluido el negocio.');
       return;
     }
 
@@ -45,6 +62,7 @@ export class RegistroPageComponent {
 
     this.authApi
       .registro({
+        comercioId: this.comercioId(),
         username: this.username(),
         password: this.password(),
         mail: this.mail(),

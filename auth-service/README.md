@@ -18,6 +18,8 @@ Es el único servicio que **no** habla con RabbitMQ: todo su trato con los demá
 | `PUT` | `/api/clientes/me/contacto` | Bearer `CLIENTE` | El cliente edita mail, dirección y teléfono (solo los campos informados) |
 | `POST` | `/api/usuarios/root` | cabecera `X-Platform-Key` | La plataforma provisiona el ROOT de un comercio. Dispara el correo de bienvenida con la URL de reseteo |
 | `POST` | `/api/usuarios` | Bearer `ROOT` o `ADMIN` | Crea usuarios del comercio. El `comercioId` **siempre** sale del token, nunca del body |
+| `GET` | `/api/usuarios` | Bearer `ROOT` | Lista los usuarios de mi comercio |
+| `DELETE` | `/api/usuarios/{id}` | Bearer `ROOT` | Elimina un usuario de mi comercio (404 si es de otro); 400 si intento eliminarme a mí mismo |
 
 Matriz de creación de usuarios: `ROOT` crea cualquier tipo de usuario de comercio (incluido otro ROOT); `ADMIN` solo `PERSONAL` y `REPARTIDOR`; `CLIENTE` no se crea nunca por aquí, se registra él mismo.
 

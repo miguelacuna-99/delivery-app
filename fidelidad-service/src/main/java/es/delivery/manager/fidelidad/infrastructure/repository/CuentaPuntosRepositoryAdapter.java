@@ -22,7 +22,7 @@ public class CuentaPuntosRepositoryAdapter implements CuentaPuntosRepository {
     }
 
     @Override
-    public Optional<CuentaPuntos> findByClienteId(String clienteId) {
-        return mongoRepository.findByClienteId(clienteId).map(fidelidadMapper::toDomain);
+    public Optional<CuentaPuntos> findByClienteIdAndComercioId(String clienteId, String comercioId) {
+        return mongoRepository.findByClienteIdAndComercioId(clienteId, comercioId).map(fidelidadMapper::toDomain);
     }
 }

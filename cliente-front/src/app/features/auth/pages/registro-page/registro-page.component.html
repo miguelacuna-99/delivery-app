@@ -2,6 +2,15 @@
   <h1>Crear cuenta</h1>
 
   <form (ngSubmit)="submit()">
+    <div class="registro-page__field">
+      <label for="comercio-select">Negocio</label>
+      <select id="comercio-select" class="registro-page__select" [value]="comercioId()" (change)="onComercioChange($event)">
+        <option value="" disabled selected>Elige un negocio</option>
+        @for (comercio of comercios(); track comercio.id) {
+          <option [value]="comercio.id">{{ comercio.nombre }}</option>
+        }
+      </select>
+    </div>
     <ui-input label="Usuario" [value]="username()" (valueChange)="username.set($event)" />
     <ui-input label="Contraseña" type="password" [value]="password()" (valueChange)="password.set($event)" />
     <ui-input label="Correo" type="email" [value]="mail()" (valueChange)="mail.set($event)" />

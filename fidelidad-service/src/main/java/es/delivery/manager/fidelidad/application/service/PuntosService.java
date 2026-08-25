@@ -18,8 +18,8 @@ public class PuntosService implements ConsultarSaldoUseCase, GetCuentaPuntosUseC
     private final CuentaPuntosRepository cuentaPuntosRepository;
 
     @Override
-    public int saldoPuntos(String clienteId) {
-        return cuentaPuntosRepository.findByClienteId(clienteId)
+    public int saldoPuntos(String clienteId, String comercioId) {
+        return cuentaPuntosRepository.findByClienteIdAndComercioId(clienteId, comercioId)
                 .map(CuentaPuntos::getSaldo)
                 .orElse(0);
     }
@@ -29,9 +29,10 @@ public class PuntosService implements ConsultarSaldoUseCase, GetCuentaPuntosUseC
         if (caller.getTipo() != TipoUsuario.CLIENTE) {
             throw new ForbiddenOperationException("Operacion solo para clientes");
         }
-        return cuentaPuntosRepository.findByClienteId(caller.getUserId())
+        return cuentaPuntosRepository.findByClienteIdAndComercioId(caller.getUserId(), caller.getComercioId())
                 .orElseGet(() -> CuentaPuntos.builder()
                         .clienteId(caller.getUserId())
+                        .comercioId(caller.getComercioId())
                         .saldo(0)
                         .movimientos(new ArrayList<>())
                         .build());

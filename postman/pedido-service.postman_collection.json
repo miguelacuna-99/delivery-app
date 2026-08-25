@@ -59,7 +59,7 @@
           }
         },
         {
-          "name": "Carrito con cupon y puntos",
+          "name": "Carrito con puntos",
           "event": [
             {
               "listen": "test",
@@ -77,11 +77,84 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"comercioId\": \"{{comercioId}}\",\n  \"items\": [\n    {\n      \"productoId\": \"{{productoId}}\",\n      \"nombre\": \"Pizza Margarita\",\n      \"precio\": {{productoPrecio}},\n      \"cantidad\": 2\n    }\n  ],\n  \"codigoCupon\": \"{{codigoCupon}}\",\n  \"puntosAplicados\": 100\n}",
+              "raw": "{\n  \"comercioId\": \"{{comercioId}}\",\n  \"items\": [\n    {\n      \"productoId\": \"{{productoId}}\",\n      \"nombre\": \"Pizza Margarita\",\n      \"precio\": {{productoPrecio}},\n      \"cantidad\": 2\n    }\n  ],\n  \"puntosAplicados\": 100\n}",
               "options": { "raw": { "language": "json" } }
             },
             "url": { "raw": "{{pedidoUrl}}/api/carrito", "host": ["{{pedidoUrl}}"], "path": ["api", "carrito"] },
-            "description": "El cupon y los puntos se validan en el checkout, no aqui: aqui solo se guardan.\n\n100 puntos = 1,00 EUR de descuento. Si el cliente no tiene saldo, el checkout dara 400."
+            "description": "Los puntos se validan en el checkout, no aqui: aqui solo se guardan.\n\n100 puntos = 1,00 EUR de descuento. Si el cliente no tiene saldo, el checkout dara 400.\n\nEl cupon NO se manda por aqui: usa las peticiones 'Aplicar cupon' / 'Quitar cupon', que lo validan al momento contra fidelidad-service."
+          }
+        },
+        {
+          "name": "Aplicar cupon",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "console.log('Descuento: ' + pm.response.json().porcentajeDescuento + '%');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{tokenCliente}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codigo\": \"{{codigoCupon}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{pedidoUrl}}/api/carrito/cupon", "host": ["{{pedidoUrl}}"], "path": ["api", "carrito", "cupon"] },
+            "description": "Valida el codigo contra fidelidad-service al momento (existe, es de mi comercio, no esta agotado/caducado) y lo fija en el carrito. 400 si no es usable."
+          }
+        },
+        {
+          "name": "Aplicar cupon no usable (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('400 Bad Request', () => pm.response.to.have.status(400));"]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{tokenCliente}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codigo\": \"NO-EXISTE\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{pedidoUrl}}/api/carrito/cupon", "host": ["{{pedidoUrl}}"], "path": ["api", "carrito", "cupon"] },
+            "description": "Un codigo inexistente, de otro comercio, agotado o caducado se rechaza al momento de aplicarlo, sin esperar al checkout."
+          }
+        },
+        {
+          "name": "Quitar cupon",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('204 No Content', () => pm.response.to.have.status(204));"]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{tokenCliente}}" }],
+            "url": { "raw": "{{pedidoUrl}}/api/carrito/cupon", "host": ["{{pedidoUrl}}"], "path": ["api", "carrito", "cupon"] },
+            "description": "Quita el cupon aplicado, sin tocar el resto del carrito."
           }
         },
         {

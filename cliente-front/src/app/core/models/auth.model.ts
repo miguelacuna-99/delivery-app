@@ -26,6 +26,7 @@ export interface DecodedToken {
 }
 
 export interface RegistroClienteRequest {
+  comercioId: string;
   username: string;
   password: string;
   mail: string;
