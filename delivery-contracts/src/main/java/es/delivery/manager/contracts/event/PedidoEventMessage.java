@@ -36,5 +36,6 @@ public class PedidoEventMessage {
     private Integer tiempoEstimadoMin;
     private String codigoCupon;
     private int puntosAplicados;
+    private String tarjetaId;
     private Instant timestamp;
 }

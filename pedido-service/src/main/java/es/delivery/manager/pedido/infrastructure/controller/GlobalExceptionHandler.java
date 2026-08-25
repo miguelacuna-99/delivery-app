@@ -20,7 +20,9 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler({CarritoVacioException.class, InvalidTransitionException.class,
             CuponNoUsableException.class, PuntosInsuficientesException.class,
-            ProductoNoDisponibleException.class, CantidadInvalidaException.class})
+            ProductoNoDisponibleException.class, CantidadInvalidaException.class,
+            CuponYPuntosExcluyentesException.class, PuntosInvalidosException.class,
+            TarjetaRequeridaException.class})
     public ResponseEntity<Map<String, String>> handleBadRequest(RuntimeException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(Map.of("error", ex.getMessage()));

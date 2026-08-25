@@ -8,6 +8,8 @@ export interface Producto {
   id: string;
   nombre: string;
   descripcion: string;
+  ingredientes?: string;
+  imagenUrl?: string;
   precio: number;
   disponible: boolean;
   [key: string]: unknown;
@@ -16,6 +18,8 @@ export interface Producto {
 export interface CrearProductoRequest {
   nombre: string;
   descripcion: string;
+  ingredientes?: string;
+  imagenUrl?: string;
   precio: number;
   disponible: boolean;
 }
@@ -43,6 +47,11 @@ export class ProductoApiService {
 
   actualizar(id: string, request: ActualizarProductoRequest): Observable<Producto> {
     return this.http.put<Producto>(`${this.baseUrl}/${id}`, request);
+  }
+
+  // PATCH dedicado: no pisa el resto de campos del producto (a diferencia de un PUT parcial)
+  actualizarDisponibilidad(id: string, disponible: boolean): Observable<Producto> {
+    return this.http.patch<Producto>(`${this.baseUrl}/${id}/disponibilidad`, { disponible });
   }
 
   eliminar(id: string): Observable<void> {

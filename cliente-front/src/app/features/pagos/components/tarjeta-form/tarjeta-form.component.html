@@ -1,0 +1,20 @@
+<div class="tarjeta-form">
+  <app-tarjeta-preview
+    [numero]="numeroFormateado()"
+    [titular]="titular()"
+    [vencimiento]="vencimiento()"
+    [marca]="marca()"
+  />
+
+  <div class="tarjeta-form__campos">
+    <ui-input label="Número de tarjeta" [value]="numeroFormateado()" (valueChange)="onNumeroChange($event)" />
+    <ui-input label="Titular" [value]="titular()" (valueChange)="titular.set($event.toUpperCase())" />
+    <div class="tarjeta-form__fila">
+      <ui-input label="Vencimiento (MM/AA)" [value]="vencimiento()" (valueChange)="onVencimientoChange($event)" />
+      <ui-input label="CVV" type="password" [value]="cvv()" (valueChange)="cvv.set($event)" />
+    </div>
+    @if (mostrarBoton()) {
+      <ui-button [loading]="saving()" [disabled]="!esValido()" (clicked)="confirmar()">Guardar tarjeta</ui-button>
+    }
+  </div>
+</div>

@@ -19,6 +19,10 @@ spring:
     serialization:
       write-dates-as-timestamps: false
 
+auth:
+  service:
+    url: ${AUTH_SERVICE_URL:http://localhost:8081}
+
 pago:
   mock:
     # Probabilidad de que la pasarela mock autorice el cobro [0..1]

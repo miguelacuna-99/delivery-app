@@ -1,5 +1,9 @@
 <ui-card class="producto-card">
-  <span class="avatar-tile producto-card__avatar" [class]="avatarClase()">{{ iniciales() }}</span>
+  @if (mostrarImagen()) {
+    <img class="producto-card__imagen" [src]="producto().imagenUrl" [alt]="producto().nombre" (error)="onImagenError()" />
+  } @else {
+    <span class="avatar-tile producto-card__avatar" [class]="avatarClase()">{{ iniciales() }}</span>
+  }
 
   <div class="producto-card__body">
     <h3>{{ producto().nombre }}</h3>

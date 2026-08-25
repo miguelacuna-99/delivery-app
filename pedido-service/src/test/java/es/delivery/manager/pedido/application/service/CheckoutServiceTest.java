@@ -14,6 +14,7 @@ import es.delivery.manager.pedido.domain.model.TokenClaims;
 import es.delivery.manager.pedido.domain.repository.CarritoRepository;
 import es.delivery.manager.pedido.domain.repository.EstadoComercioRepository;
 import es.delivery.manager.pedido.domain.repository.PedidoRepository;
+import es.delivery.manager.pedido.domain.service.ComercioPort;
 import es.delivery.manager.pedido.domain.service.FidelidadPort;
 import es.delivery.manager.pedido.domain.service.ProductoPort;
 import org.junit.jupiter.api.BeforeEach;
@@ -53,6 +54,9 @@ class CheckoutServiceTest {
     private FidelidadPort fidelidadPort;
 
     @Mock
+    private ComercioPort comercioPort;
+
+    @Mock
     private EstadoComercioRepository estadoComercioRepository;
 
     @Mock
@@ -70,6 +74,7 @@ class CheckoutServiceTest {
                 ProductoCatalogo.builder().id("p2").nombre("Refresco").precio(new BigDecimal("2.00")).disponible(true).build()));
         when(pedidoRepository.findByNumeroPedido(anyString())).thenReturn(Optional.empty());
         when(pedidoRepository.save(any(Pedido.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(comercioPort.getValorPunto("comercio-1")).thenReturn(new BigDecimal("0.01"));
     }
 
     private TokenClaims cliente() {
@@ -126,18 +131,55 @@ class CheckoutServiceTest {
     }
 
     @Test
-    void checkoutAplicaCuponYPuntos() {
-        enCarrito(carrito("PROMO10", 100));
+    void checkoutAplicaCupon() {
+        enCarrito(carrito("PROMO10", 0));
         when(fidelidadPort.porcentajeCupon("PROMO10", "comercio-1", "cliente-1"))
                 .thenReturn(Optional.of(new BigDecimal("10")));
-        when(fidelidadPort.saldoPuntos("cliente-1")).thenReturn(500);
 
         Pedido pedido = checkoutService.checkout(cliente());
 
-        // subtotal 22.00, cupon 10% = 2.20, 100 puntos = 1.00
+        // subtotal 22.00, cupon 10% = 2.20
         assertThat(pedido.getDescuentoCupon()).isEqualByComparingTo("2.20");
+        assertThat(pedido.getDescuentoPuntos()).isEqualByComparingTo("0");
+        assertThat(pedido.getTotal()).isEqualByComparingTo("19.80");
+    }
+
+    @Test
+    void checkoutAplicaPuntos() {
+        enCarrito(carrito(null, 100));
+        when(fidelidadPort.saldoPuntos("cliente-1", "comercio-1")).thenReturn(500);
+
+        Pedido pedido = checkoutService.checkout(cliente());
+
+        // subtotal 22.00, 100 puntos * 0.01 = 1.00
+        assertThat(pedido.getDescuentoCupon()).isEqualByComparingTo("0");
         assertThat(pedido.getDescuentoPuntos()).isEqualByComparingTo("1.00");
-        assertThat(pedido.getTotal()).isEqualByComparingTo("18.80");
+        assertThat(pedido.getTotal()).isEqualByComparingTo("21.00");
+    }
+
+    @Test
+    void checkoutRechazaCuponYPuntosJuntos() {
+        // No deberia poder llegar a persistirse un carrito asi (aplicarCupon/
+        // aplicarPuntos ya se rechazan mutuamente), pero el checkout tiene su
+        // propia comprobacion de ultima linea de defensa
+        enCarrito(carrito("PROMO10", 100));
+
+        assertThatThrownBy(() -> checkoutService.checkout(cliente()))
+                .isInstanceOf(CuponYPuntosExcluyentesException.class);
+
+        verify(pedidoRepository, never()).save(any());
+    }
+
+    @Test
+    void checkoutUsaElValorDePuntoDelComercio() {
+        enCarrito(carrito(null, 100));
+        when(fidelidadPort.saldoPuntos("cliente-1", "comercio-1")).thenReturn(500);
+        when(comercioPort.getValorPunto("comercio-1")).thenReturn(new BigDecimal("0.02"));
+
+        Pedido pedido = checkoutService.checkout(cliente());
+
+        // 100 puntos * 0.02 = 2.00
+        assertThat(pedido.getDescuentoPuntos()).isEqualByComparingTo("2.00");
     }
 
     @Test
@@ -155,7 +197,7 @@ class CheckoutServiceTest {
     @Test
     void checkoutRechazaPuntosPorEncimaDelSaldo() {
         enCarrito(carrito(null, 1000));
-        when(fidelidadPort.saldoPuntos("cliente-1")).thenReturn(50);
+        when(fidelidadPort.saldoPuntos("cliente-1", "comercio-1")).thenReturn(50);
 
         assertThatThrownBy(() -> checkoutService.checkout(cliente()))
                 .isInstanceOf(PuntosInsuficientesException.class);

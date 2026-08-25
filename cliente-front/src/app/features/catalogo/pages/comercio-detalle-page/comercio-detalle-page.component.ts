@@ -77,9 +77,7 @@ export class ComercioDetallePageComponent implements OnInit {
         this.carritoApi
           .actualizar({
             comercioId: this.comercioId,
-            items,
-            codigoCupon: mismoComercio ? (carrito.codigoCupon ?? undefined) : undefined,
-            puntosAplicados: mismoComercio ? carrito.puntosAplicados : undefined
+            items
           })
           .subscribe({
             next: () => {

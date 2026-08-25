@@ -36,6 +36,7 @@ public class Pedido {
     private String motivoAnulacion;
     private String codigoCupon;
     private int puntosAplicados;
+    private String tarjetaId;
     private Instant fechaCreacion;
     private Instant fechaAceptacion;
     private Instant fechaRechazo;

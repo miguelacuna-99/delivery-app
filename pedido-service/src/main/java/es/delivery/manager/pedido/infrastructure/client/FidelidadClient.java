@@ -46,9 +46,9 @@ public class FidelidadClient implements FidelidadPort {
     }
 
     @Override
-    public int saldoPuntos(String clienteId) {
+    public int saldoPuntos(String clienteId, String comercioId) {
         SaldoResponse response = restClient.get()
-                .uri("/api/puntos/{clienteId}/saldo", clienteId)
+                .uri("/api/puntos/{clienteId}/saldo?comercioId={comercioId}", clienteId, comercioId)
                 .header(SERVICE_KEY_HEADER, serviceApiKey)
                 .retrieve()
                 .body(SaldoResponse.class);

@@ -67,12 +67,10 @@ class PedidoServiceTest {
         assertThat(aceptado.getTiempoEstimadoMin()).isEqualTo(30);
         assertThat(aceptado.getFechaAceptacion()).isNotNull();
 
-        // Al aceptar se publican pedido.aceptado y pago.solicitado
+        // Aceptar ya no dispara el cobro: eso lo hace el cliente via pagar()
         ArgumentCaptor<PedidoEvent> captor = ArgumentCaptor.forClass(PedidoEvent.class);
-        verify(eventPublisher, times(2)).publish(captor.capture());
-        assertThat(captor.getAllValues())
-                .extracting(PedidoEvent::getType)
-                .containsExactly(EventType.PEDIDO_ACEPTADO, EventType.PAGO_SOLICITADO);
+        verify(eventPublisher).publish(captor.capture());
+        assertThat(captor.getValue().getType()).isEqualTo(EventType.PEDIDO_ACEPTADO);
     }
 
     @Test
@@ -164,5 +162,53 @@ class PedidoServiceTest {
 
         assertThatThrownBy(() -> pedidoService.anular(caller(TipoUsuario.ROOT), "pedido-1", "x"))
                 .isInstanceOf(InvalidTransitionException.class);
+    }
+
+    private TokenClaims cliente() {
+        return TokenClaims.builder().userId("cliente-1").username("ana").tipo(TipoUsuario.CLIENTE).build();
+    }
+
+    @Test
+    void elClientePagaSuPedidoAceptadoYDisparaElCobro() {
+        when(pedidoRepository.findById("pedido-1")).thenReturn(Optional.of(pedido(EstadoPedido.ACEPTADO)));
+        when(pedidoRepository.save(any(Pedido.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Pedido pagado = pedidoService.pagar(cliente(), "pedido-1", "tarjeta-1");
+
+        assertThat(pagado.getTarjetaId()).isEqualTo("tarjeta-1");
+        ArgumentCaptor<PedidoEvent> captor = ArgumentCaptor.forClass(PedidoEvent.class);
+        verify(eventPublisher).publish(captor.capture());
+        assertThat(captor.getValue().getType()).isEqualTo(EventType.PAGO_SOLICITADO);
+    }
+
+    @Test
+    void pagarSinTarjetaLanza400() {
+        assertThatThrownBy(() -> pedidoService.pagar(cliente(), "pedido-1", ""))
+                .isInstanceOf(TarjetaRequeridaException.class);
+
+        verify(pedidoRepository, never()).save(any());
+        verify(eventPublisher, never()).publish(any());
+    }
+
+    @Test
+    void noSePuedePagarUnPedidoDeOtroCliente() {
+        Pedido ajeno = pedido(EstadoPedido.ACEPTADO);
+        ajeno.setClienteId("otro-cliente");
+        when(pedidoRepository.findById("pedido-1")).thenReturn(Optional.of(ajeno));
+
+        assertThatThrownBy(() -> pedidoService.pagar(cliente(), "pedido-1", "tarjeta-1"))
+                .isInstanceOf(PedidoNotFoundException.class);
+
+        verify(eventPublisher, never()).publish(any());
+    }
+
+    @Test
+    void noSePuedePagarUnPedidoQueNoEstaAceptado() {
+        when(pedidoRepository.findById("pedido-1")).thenReturn(Optional.of(pedido(EstadoPedido.PENDIENTE)));
+
+        assertThatThrownBy(() -> pedidoService.pagar(cliente(), "pedido-1", "tarjeta-1"))
+                .isInstanceOf(InvalidTransitionException.class);
+
+        verify(eventPublisher, never()).publish(any());
     }
 }

@@ -13,6 +13,7 @@ import es.delivery.manager.contracts.model.TipoUsuario;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 
@@ -22,6 +23,10 @@ public class ComercioService implements CreateComercioUseCase, GetComercioUseCas
         ListComerciosActivosUseCase, UpdateComercioUseCase {
 
     private final ComercioRepository comercioRepository;
+
+    // Mismo valor que la antigua constante global VALOR_PUNTO de pedido-service:
+    // nada cambia hasta que un ROOT/ADMIN lo personalice desde "Mi comercio"
+    private static final BigDecimal VALOR_PUNTO_POR_DEFECTO = new BigDecimal("0.01");
 
     @Override
     public Comercio createComercio(Comercio comercio, PlanSuscripcion plan) {
@@ -34,6 +39,7 @@ public class ComercioService implements CreateComercioUseCase, GetComercioUseCas
         comercio.setEstadoSuscripcion(EstadoSuscripcion.ACTIVA);
         comercio.setFechaInicioSuscripcion(ahora);
         comercio.setFechaFinSuscripcion(Suscripciones.extender(ahora, plan));
+        comercio.setValorPuntoEuros(VALOR_PUNTO_POR_DEFECTO);
         return comercioRepository.save(comercio);
     }
 
@@ -59,6 +65,12 @@ public class ComercioService implements CreateComercioUseCase, GetComercioUseCas
         comercio.setDireccion(cambios.getDireccion());
         comercio.setTelefono(cambios.getTelefono());
         comercio.setEmail(cambios.getEmail());
+        if (cambios.getValorPuntoEuros() != null) {
+            if (cambios.getValorPuntoEuros().compareTo(BigDecimal.ZERO) <= 0) {
+                throw new ValorPuntoInvalidoException();
+            }
+            comercio.setValorPuntoEuros(cambios.getValorPuntoEuros());
+        }
         return comercioRepository.save(comercio);
     }
 

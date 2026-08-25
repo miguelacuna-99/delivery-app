@@ -1,5 +1,9 @@
 <div class="carrito-item-row">
-  <span class="avatar-tile carrito-item-row__avatar" [class]="avatarClase()">{{ iniciales() }}</span>
+  @if (mostrarImagen()) {
+    <img class="carrito-item-row__imagen" [src]="item().imagenUrl" [alt]="item().nombre ?? ''" (error)="onImagenError()" />
+  } @else {
+    <span class="avatar-tile carrito-item-row__avatar" [class]="avatarClase()">{{ iniciales() }}</span>
+  }
 
   <div class="carrito-item-row__info">
     <span class="carrito-item-row__nombre">{{ item().nombre ?? item().productoId }}</span>

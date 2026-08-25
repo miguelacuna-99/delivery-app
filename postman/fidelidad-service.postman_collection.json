@@ -220,11 +220,12 @@
             "method": "GET",
             "header": [{ "key": "X-Service-Key", "value": "{{serviceKey}}" }],
             "url": {
-              "raw": "{{fidelidadUrl}}/api/puntos/{{clienteId}}/saldo",
+              "raw": "{{fidelidadUrl}}/api/puntos/{{clienteId}}/saldo?comercioId={{comercioId}}",
               "host": ["{{fidelidadUrl}}"],
-              "path": ["api", "puntos", "{{clienteId}}", "saldo"]
+              "path": ["api", "puntos", "{{clienteId}}", "saldo"],
+              "query": [{ "key": "comercioId", "value": "{{comercioId}}" }]
             },
-            "description": "Endpoint interno protegido con la clave de servicio a servicio. Sin la cabecera X-Service-Key responde 401."
+            "description": "Endpoint interno protegido con la clave de servicio a servicio. Sin la cabecera X-Service-Key responde 401. El saldo es por (cliente, comercio)."
           }
         }
       ]

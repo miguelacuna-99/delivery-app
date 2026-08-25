@@ -1,14 +1,15 @@
 <nav class="navbar">
-  <div class="navbar__brand" routerLink="/catalogo">
+  <div class="navbar__brand" [routerLink]="catalogoLink()">
     <span class="navbar__mark" aria-hidden="true">D</span>
     DeliveryApp
   </div>
 
   <div class="navbar__links">
-    <a routerLink="/catalogo" routerLinkActive="navbar__link--active" class="navbar__link">Comercios</a>
+    <a [routerLink]="catalogoLink()" routerLinkActive="navbar__link--active" class="navbar__link">Mi negocio</a>
     <a routerLink="/carrito" routerLinkActive="navbar__link--active" class="navbar__link">Carrito</a>
     <a routerLink="/pedidos" routerLinkActive="navbar__link--active" class="navbar__link">Mis pedidos</a>
     <a routerLink="/puntos" routerLinkActive="navbar__link--active" class="navbar__link">Puntos</a>
+    <a routerLink="/pagos" routerLinkActive="navbar__link--active" class="navbar__link">Pagos</a>
     <a routerLink="/contacto" routerLinkActive="navbar__link--active" class="navbar__link">Mis datos</a>
   </div>
 

@@ -10,5 +10,5 @@ import java.util.Optional;
  */
 public interface FidelidadPort {
     Optional<BigDecimal> porcentajeCupon(String codigo, String comercioId, String clienteId);
-    int saldoPuntos(String clienteId);
+    int saldoPuntos(String clienteId, String comercioId);
 }

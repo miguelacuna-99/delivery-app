@@ -11,13 +11,14 @@ import org.mapstruct.Mapping;
 @Mapper(componentModel = "spring")
 public interface ComercioMapper {
 
-    // plan/suscripcion los fija el service a partir del plan de la request
+    // plan/suscripcion/valorPuntoEuros los fija el service a partir del plan de la request
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "activo", ignore = true)
     @Mapping(target = "plan", ignore = true)
     @Mapping(target = "estadoSuscripcion", ignore = true)
     @Mapping(target = "fechaInicioSuscripcion", ignore = true)
     @Mapping(target = "fechaFinSuscripcion", ignore = true)
+    @Mapping(target = "valorPuntoEuros", ignore = true)
     Comercio toDomain(CreateComercioRequest request);
 
     @Mapping(target = "id", ignore = true)

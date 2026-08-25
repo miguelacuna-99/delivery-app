@@ -17,6 +17,14 @@
   flex-shrink: 0;
 }
 
+.carrito-item-row__imagen {
+  width: 2.5rem;
+  height: 2.5rem;
+  flex-shrink: 0;
+  border-radius: var(--radius-md);
+  object-fit: cover;
+}
+
 .carrito-item-row__info {
   flex: 1;
   min-width: 0;

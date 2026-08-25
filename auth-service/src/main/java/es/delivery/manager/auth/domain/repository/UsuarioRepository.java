@@ -12,4 +12,5 @@ public interface UsuarioRepository {
     Optional<Usuario> findByMail(String mail);
     boolean existsByUsername(String username);
     List<Usuario> findByComercioId(String comercioId);
+    void deleteById(String id);
 }

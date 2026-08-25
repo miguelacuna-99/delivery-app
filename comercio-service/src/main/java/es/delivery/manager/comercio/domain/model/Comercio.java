@@ -7,6 +7,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 
 @Data
@@ -26,6 +27,10 @@ public class Comercio {
     private EstadoSuscripcion estadoSuscripcion;
     private Instant fechaInicioSuscripcion;
     private Instant fechaFinSuscripcion;
+
+    // Valor en euros de cada punto de fidelidad al canjearlo. BigDecimal (no
+    // primitivo) para poder distinguir "no viene en el request" de "viene a 0".
+    private BigDecimal valorPuntoEuros;
 
     /**
      * Un comercio opera (recibe pedidos, gestiona catalogo) mientras su

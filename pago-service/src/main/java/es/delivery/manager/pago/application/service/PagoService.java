@@ -8,6 +8,7 @@ import es.delivery.manager.pago.domain.event.PagoEvent;
 import es.delivery.manager.pago.domain.event.PagoEventPublisher;
 import es.delivery.manager.pago.domain.model.Pago;
 import es.delivery.manager.pago.domain.repository.PagoRepository;
+import es.delivery.manager.pago.domain.repository.TarjetaRepository;
 import es.delivery.manager.pago.domain.service.PasarelaPort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,11 +24,12 @@ import java.util.Optional;
 public class PagoService implements ProcesarPagoUseCase, ProcesarDevolucionUseCase {
 
     private final PagoRepository pagoRepository;
+    private final TarjetaRepository tarjetaRepository;
     private final PasarelaPort pasarelaPort;
     private final PagoEventPublisher eventPublisher;
 
     @Override
-    public Pago procesarPago(String pedidoId, String comercioId, String clienteId, BigDecimal importe) {
+    public Pago procesarPago(String pedidoId, String comercioId, String clienteId, String tarjetaId, BigDecimal importe) {
         // Idempotencia: un reenvio del evento no cobra dos veces
         Optional<Pago> existente = pagoRepository.findByPedidoId(pedidoId);
         if (existente.isPresent()) {
@@ -35,11 +37,20 @@ public class PagoService implements ProcesarPagoUseCase, ProcesarDevolucionUseCa
             return existente.get();
         }
 
-        PasarelaPort.ResultadoCobro resultado = pasarelaPort.cobrar(pedidoId, importe);
+        boolean tarjetaValida = esTarjetaDelCliente(tarjetaId, clienteId);
+        PasarelaPort.ResultadoCobro resultado = tarjetaValida
+                ? pasarelaPort.cobrar(pedidoId, importe)
+                : new PasarelaPort.ResultadoCobro(false, null);
+        if (!tarjetaValida) {
+            log.warn("Tarjeta {} invalida o no pertenece al cliente {}: pago denegado sin pasar por la pasarela",
+                    tarjetaId, clienteId);
+        }
+
         Pago pago = Pago.builder()
                 .pedidoId(pedidoId)
                 .comercioId(comercioId)
                 .clienteId(clienteId)
+                .tarjetaId(tarjetaId)
                 .importe(importe)
                 .firma(resultado.firma())
                 .estado(resultado.autorizado() ? EstadoPago.COMPLETADO : EstadoPago.FALLIDO)
@@ -49,6 +60,15 @@ public class PagoService implements ProcesarPagoUseCase, ProcesarDevolucionUseCa
 
         publish(saved, resultado.autorizado() ? RoutingKeys.PAGO_COMPLETADO : RoutingKeys.PAGO_FALLIDO);
         return saved;
+    }
+
+    private boolean esTarjetaDelCliente(String tarjetaId, String clienteId) {
+        if (tarjetaId == null || tarjetaId.isBlank()) {
+            return false;
+        }
+        return tarjetaRepository.findById(tarjetaId)
+                .map(tarjeta -> tarjeta.getClienteId().equals(clienteId))
+                .orElse(false);
     }
 
     @Override

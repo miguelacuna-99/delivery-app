@@ -4,6 +4,7 @@ import es.delivery.manager.comercio.application.service.CifAlreadyExistsExceptio
 import es.delivery.manager.comercio.application.service.ComercioNotFoundException;
 import es.delivery.manager.comercio.application.service.ForbiddenOperationException;
 import es.delivery.manager.comercio.application.service.ProductoNotFoundException;
+import es.delivery.manager.comercio.application.service.ValorPuntoInvalidoException;
 import es.delivery.manager.comercio.infrastructure.security.UnauthorizedException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -24,6 +25,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(CifAlreadyExistsException.class)
     public ResponseEntity<Map<String, String>> handleCifAlreadyExists(CifAlreadyExistsException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(Map.of("error", ex.getMessage()));
+    }
+
+    @ExceptionHandler(ValorPuntoInvalidoException.class)
+    public ResponseEntity<Map<String, String>> handleValorPuntoInvalido(ValorPuntoInvalidoException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(Map.of("error", ex.getMessage()));
     }
 

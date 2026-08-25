@@ -26,6 +26,7 @@ public class PagoDocument {
     private String comercioId;
     @Indexed
     private String clienteId;
+    private String tarjetaId;
     private BigDecimal importe;
     private String firma;
     private EstadoPago estado;

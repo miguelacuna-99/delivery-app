@@ -1,4 +1,4 @@
-import { Component, computed, input, output } from '@angular/core';
+import { Component, computed, input, output, signal } from '@angular/core';
 import { ItemCarritoResponse } from '../../models/carrito.model';
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
 import { avatarClase, iniciales } from '../../../../shared/utils/avatar.util';
@@ -15,9 +15,16 @@ export class CarritoItemRowComponent {
   readonly cantidadChange = output<number>();
   readonly eliminar = output<void>();
 
-  /** Tile de iniciales: el carrito no trae imagen de producto. */
+  private readonly imagenConError = signal(false);
+
+  /** Tile de iniciales: fallback cuando el item no tiene imagen o la URL no carga. */
+  protected readonly mostrarImagen = computed(() => !!this.item().imagenUrl && !this.imagenConError());
   protected readonly iniciales = computed(() => iniciales(this.item().nombre ?? this.item().productoId));
   protected readonly avatarClase = computed(() => avatarClase(this.item().productoId));
+
+  onImagenError(): void {
+    this.imagenConError.set(true);
+  }
 
   onDecrementar(): void {
     const nuevaCantidad = this.item().cantidad - 1;

@@ -9,5 +9,5 @@ import java.math.BigDecimal;
  * y publica pago.completado o pago.fallido.
  */
 public interface ProcesarPagoUseCase {
-    Pago procesarPago(String pedidoId, String comercioId, String clienteId, BigDecimal importe);
+    Pago procesarPago(String pedidoId, String comercioId, String clienteId, String tarjetaId, BigDecimal importe);
 }

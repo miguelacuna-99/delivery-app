@@ -14,6 +14,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.math.BigDecimal;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
@@ -67,6 +68,7 @@ class ComercioServiceTest {
         // Un mes vista: entre 28 y 31 dias por delante del inicio
         Duration duracion = Duration.between(creado.getFechaInicioSuscripcion(), creado.getFechaFinSuscripcion());
         assertThat(duracion).isBetween(Duration.ofDays(28), Duration.ofDays(31));
+        assertThat(creado.getValorPuntoEuros()).isEqualByComparingTo("0.01");
     }
 
     @Test
@@ -125,6 +127,48 @@ class ComercioServiceTest {
         // El CIF y la suscripcion no se tocan desde este caso de uso
         assertThat(actualizado.getCif()).isEqualTo("B12345678");
         assertThat(actualizado.getEstadoSuscripcion()).isEqualTo(EstadoSuscripcion.ACTIVA);
+    }
+
+    @Test
+    void actualizarElValorDelPuntoLoCambia() {
+        Comercio existente = comercioNuevo();
+        existente.setId("comercio-1");
+        existente.setValorPuntoEuros(new BigDecimal("0.01"));
+        when(comercioRepository.findById("comercio-1")).thenReturn(Optional.of(existente));
+        when(comercioRepository.save(any(Comercio.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Comercio cambios = Comercio.builder().valorPuntoEuros(new BigDecimal("0.05")).build();
+
+        Comercio actualizado = comercioService.updateComercio(caller(TipoUsuario.ADMIN), cambios);
+
+        assertThat(actualizado.getValorPuntoEuros()).isEqualByComparingTo("0.05");
+    }
+
+    @Test
+    void noMandarValorDelPuntoConservaElActual() {
+        Comercio existente = comercioNuevo();
+        existente.setId("comercio-1");
+        existente.setValorPuntoEuros(new BigDecimal("0.01"));
+        when(comercioRepository.findById("comercio-1")).thenReturn(Optional.of(existente));
+        when(comercioRepository.save(any(Comercio.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Comercio actualizado = comercioService.updateComercio(caller(TipoUsuario.ADMIN), comercioNuevo());
+
+        assertThat(actualizado.getValorPuntoEuros()).isEqualByComparingTo("0.01");
+    }
+
+    @Test
+    void unValorDePuntoNoPositivoSeRechaza() {
+        Comercio existente = comercioNuevo();
+        existente.setId("comercio-1");
+        existente.setValorPuntoEuros(new BigDecimal("0.01"));
+        when(comercioRepository.findById("comercio-1")).thenReturn(Optional.of(existente));
+
+        Comercio cambios = Comercio.builder().valorPuntoEuros(BigDecimal.ZERO).build();
+
+        assertThatThrownBy(() -> comercioService.updateComercio(caller(TipoUsuario.ROOT), cambios))
+                .isInstanceOf(ValorPuntoInvalidoException.class);
+        verify(comercioRepository, never()).save(any());
     }
 
     @ParameterizedTest

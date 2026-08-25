@@ -1,8 +1,11 @@
-.productos-page__form {
-  margin-bottom: var(--space-5);
-}
-
 .productos-page__actions {
   display: flex;
   gap: var(--space-2);
+}
+
+.productos-page__thumb {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  object-fit: cover;
 }

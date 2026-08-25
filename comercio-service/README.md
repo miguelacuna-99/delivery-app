@@ -26,12 +26,15 @@ Ojo con la palabra "pago" aquí: la suscripción es lo que el comercio le paga a
 |---|---|---|---|
 | `GET` | `/api/comercios/{comercioId}/productos` | pública | Catálogo de un comercio |
 | `POST` | `/api/productos` | Bearer `ROOT` o `ADMIN` | Crea producto. El `comercioId` sale del token |
-| `PUT` | `/api/productos/{id}` | Bearer `ROOT` o `ADMIN` | Edita nombre, descripción, ingredientes, imagen, precio y disponibilidad |
+| `PUT` | `/api/productos/{id}` | Bearer `ROOT` o `ADMIN` | Reemplaza nombre, descripción, ingredientes, imagen, precio y disponibilidad — hay que mandar el producto completo |
+| `PATCH` | `/api/productos/{id}/disponibilidad` | Bearer `ROOT` o `ADMIN` | Activa/desactiva el producto sin tocar el resto de sus datos |
 | `DELETE` | `/api/productos/{id}` | Bearer `ROOT` o `ADMIN` | Elimina producto (204) |
 
 Errores: 409 CIF duplicado · 403 tipo de usuario sin permiso o `X-Platform-Key` inválida · 404 comercio/producto no encontrado · 401 token inválido.
 
 **Un producto de otro comercio responde 404, no 403.** Es intencionado: un 403 confirmaría que ese id existe.
+
+**`PUT` es un reemplazo completo, no un parche.** Manda solo `disponible` por ahí y el resto de campos se sobrescriben a vacío/null. Para activar o desactivar sin arriesgar el resto de datos, usar siempre `PATCH /api/productos/{id}/disponibilidad`.
 
 ## Eventos
 

@@ -321,7 +321,10 @@
               "listen": "test",
               "script": {
                 "type": "text/javascript",
-                "exec": ["pm.test('201 Created', () => pm.response.to.have.status(201));"]
+                "exec": [
+                  "pm.test('201 Created', () => pm.response.to.have.status(201));",
+                  "pm.environment.set('repartidorId', pm.response.json().id);"
+                ]
               }
             }
           ],
@@ -337,6 +340,85 @@
               "options": { "raw": { "language": "json" } }
             },
             "url": { "raw": "{{authUrl}}/api/usuarios", "host": ["{{authUrl}}"], "path": ["api", "usuarios"] }
+          }
+        },
+        {
+          "name": "Listar usuarios (Bearer ROOT)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('200 OK', () => pm.response.to.have.status(200));"]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{tokenRoot}}" }],
+            "url": { "raw": "{{authUrl}}/api/usuarios", "host": ["{{authUrl}}"], "path": ["api", "usuarios"] },
+            "description": "Solo ROOT ve la lista de usuarios de su comercio."
+          }
+        },
+        {
+          "name": "ADMIN intenta listar usuarios (403)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('403 Forbidden', () => pm.response.to.have.status(403));"]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{tokenAdmin}}" }],
+            "url": { "raw": "{{authUrl}}/api/usuarios", "host": ["{{authUrl}}"], "path": ["api", "usuarios"] }
+          }
+        },
+        {
+          "name": "Eliminar usuario (Bearer ROOT)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('204 No Content', () => pm.response.to.have.status(204));"]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{tokenRoot}}" }],
+            "url": {
+              "raw": "{{authUrl}}/api/usuarios/{{repartidorId}}",
+              "host": ["{{authUrl}}"],
+              "path": ["api", "usuarios", "{{repartidorId}}"]
+            },
+            "description": "Elimina al REPARTIDOR de ejemplo creado antes."
+          }
+        },
+        {
+          "name": "ROOT intenta eliminarse a si mismo (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('400 Bad Request', () => pm.response.to.have.status(400));"]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{tokenRoot}}" }],
+            "url": {
+              "raw": "{{authUrl}}/api/usuarios/{{rootUserId}}",
+              "host": ["{{authUrl}}"],
+              "path": ["api", "usuarios", "{{rootUserId}}"]
+            },
+            "description": "rootUserId se captura al ejecutar 'Provisionar ROOT del comercio': es el id del propio usuario logueado como tokenRoot."
           }
         },
         {

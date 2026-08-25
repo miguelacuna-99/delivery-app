@@ -10,4 +10,5 @@ export interface Comercio {
   direccion?: string;
   telefono?: string;
   email?: string;
+  valorPuntoEuros?: number;
 }

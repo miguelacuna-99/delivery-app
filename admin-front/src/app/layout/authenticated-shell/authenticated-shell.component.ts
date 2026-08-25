@@ -2,12 +2,11 @@ import { Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { NavbarComponent } from '../navbar/navbar.component';
 import { SidebarComponent } from '../sidebar/sidebar.component';
-import { ToastComponent } from '../../shared/components/toast/toast.component';
 
 @Component({
   selector: 'app-authenticated-shell',
   standalone: true,
-  imports: [RouterOutlet, NavbarComponent, SidebarComponent, ToastComponent],
+  imports: [RouterOutlet, NavbarComponent, SidebarComponent],
   template: `
     <div class="app-shell">
       <app-navbar></app-navbar>
@@ -18,7 +17,6 @@ import { ToastComponent } from '../../shared/components/toast/toast.component';
         </main>
       </div>
     </div>
-    <app-toast></app-toast>
   `,
   styleUrl: './authenticated-shell.component.scss'
 })

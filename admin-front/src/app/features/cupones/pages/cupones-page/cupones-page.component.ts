@@ -15,74 +15,82 @@ import { TipoUsuario } from '../../../../core/models/auth.model';
   standalone: true,
   imports: [CommonModule, InputComponent, ButtonComponent, CardComponent, SpinnerComponent, IconComponent],
   template: `
-    <h2 class="page-title">Cupones</h2>
+    <div class="page-stack">
+      <h2 class="page-title">Cupones</h2>
 
-    @if (canEscribir()) {
-      <app-card title="Nuevo cupón" class="form-card cupones-page__form">
-        <app-input label="Código" [value]="codigo()" (valueChange)="codigo.set($event)"></app-input>
-        <app-input
-          label="% descuento"
-          type="number"
-          [value]="porcentajeDescuento()"
-          (valueChange)="porcentajeDescuento.set($event)"
-        ></app-input>
-        <app-input
-          label="Fecha de caducidad"
-          type="date"
-          [value]="fechaCaducidad()"
-          (valueChange)="fechaCaducidad.set($event)"
-        ></app-input>
-        <app-button [loading]="saving()" (clicked)="crear()">Crear cupón</app-button>
-      </app-card>
-    }
+      @if (canEscribir()) {
+        <app-card title="Nuevo cupón" class="form-card cupones-page__form">
+          <app-input label="Código" [value]="codigo()" (valueChange)="codigo.set($event)"></app-input>
+          <app-input
+            label="% descuento"
+            type="number"
+            [value]="porcentajeDescuento()"
+            (valueChange)="porcentajeDescuento.set($event)"
+          ></app-input>
+          <app-input
+            label="Usos máx. por cliente"
+            type="number"
+            [value]="usosMaximosPorUsuario()"
+            (valueChange)="usosMaximosPorUsuario.set($event)"
+          ></app-input>
+          <app-input
+            label="Fecha de caducidad"
+            type="date"
+            [value]="fechaCaducidad()"
+            (valueChange)="fechaCaducidad.set($event)"
+          ></app-input>
+          <app-button [loading]="saving()" (clicked)="crear()">Crear cupón</app-button>
+        </app-card>
+      }
 
-    @if (loading()) {
-      <div class="loading-state"><app-spinner></app-spinner></div>
-    }
+      @if (loading()) {
+        <div class="loading-state"><app-spinner></app-spinner></div>
+      }
 
-    @if (!loading() && cupones().length === 0) {
-      <div class="empty-state">
-        <app-icon name="cupones" [size]="32"></app-icon>
-        <p>No hay cupones todavía.</p>
-      </div>
-    }
+      @if (!loading() && cupones().length === 0) {
+        <div class="empty-state">
+          <app-icon name="cupones" [size]="32"></app-icon>
+          <p>No hay cupones todavía.</p>
+        </div>
+      }
 
-    @if (cupones().length > 0) {
-      <div class="table-wrapper">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>Código</th>
-              <th>% descuento</th>
-              <th>Caducidad</th>
-              <th>Estado</th>
-              @if (canEscribir()) {
-                <th>Acciones</th>
-              }
-            </tr>
-          </thead>
-          <tbody>
-            @for (cupon of cupones(); track cupon.id) {
+      @if (cupones().length > 0) {
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead>
               <tr>
-                <td>{{ cupon.codigo }}</td>
-                <td>{{ cupon.porcentajeDescuento }}%</td>
-                <td>{{ cupon.fechaCaducidad | date: 'shortDate' }}</td>
-                <td>
-                  <span class="status-pill" [class]="estadoPillClass(cupon.estado)">{{ cupon.estado }}</span>
-                </td>
+                <th>Código</th>
+                <th>% descuento</th>
+                <th>Caducidad</th>
+                <th>Estado</th>
                 @if (canEscribir()) {
-                  <td>
-                    @if (cupon.estado === 'ACTIVO') {
-                      <app-button variant="danger" (clicked)="anular(cupon)">Anular</app-button>
-                    }
-                  </td>
+                  <th>Acciones</th>
                 }
               </tr>
-            }
-          </tbody>
-        </table>
-      </div>
-    }
+            </thead>
+            <tbody>
+              @for (cupon of cupones(); track cupon.id) {
+                <tr>
+                  <td>{{ cupon.codigo }}</td>
+                  <td>{{ cupon.porcentajeDescuento }}%</td>
+                  <td>{{ cupon.fechaCaducidad | date: 'shortDate' }}</td>
+                  <td>
+                    <span class="status-pill" [class]="estadoPillClass(cupon.estado)">{{ cupon.estado }}</span>
+                  </td>
+                  @if (canEscribir()) {
+                    <td>
+                      @if (cupon.estado === 'ACTIVO') {
+                        <app-button variant="danger" (clicked)="anular(cupon)">Anular</app-button>
+                      }
+                    </td>
+                  }
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
   `,
   styleUrl: './cupones-page.component.scss'
 })
@@ -97,6 +105,7 @@ export class CuponesPageComponent {
 
   readonly codigo = signal('');
   readonly porcentajeDescuento = signal('');
+  readonly usosMaximosPorUsuario = signal('1');
   readonly fechaCaducidad = signal('');
 
   readonly canEscribir = computed(() => this.authService.tipo() === TipoUsuario.ADMIN);
@@ -130,13 +139,19 @@ export class CuponesPageComponent {
   }
 
   crear(): void {
+    const usosMaximos = Number(this.usosMaximosPorUsuario()) || 0;
     const request: CrearCuponRequest = {
       codigo: this.codigo(),
       porcentajeDescuento: Number(this.porcentajeDescuento()) || 0,
+      usosMaximosPorUsuario: usosMaximos,
       fechaCaducidad: this.fechaCaducidad()
     };
     if (!request.codigo || !request.fechaCaducidad) {
       this.toastService.error('Introduce código y fecha de caducidad.');
+      return;
+    }
+    if (usosMaximos <= 0) {
+      this.toastService.error('Los usos máximos por cliente deben ser mayores que 0.');
       return;
     }
     this.saving.set(true);
@@ -145,6 +160,7 @@ export class CuponesPageComponent {
         this.saving.set(false);
         this.codigo.set('');
         this.porcentajeDescuento.set('');
+        this.usosMaximosPorUsuario.set('1');
         this.fechaCaducidad.set('');
         this.toastService.success('Cupón creado.');
         this.cargar();

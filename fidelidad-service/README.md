@@ -23,8 +23,8 @@ Tiene dos caras: una API REST (gestión de cupones y consulta de puntos, más do
 
 | Método | Ruta | Protección | Qué hace |
 |---|---|---|---|
-| `GET` | `/api/puntos/me` | Bearer `CLIENTE` | Mi saldo y el historial de movimientos |
-| `GET` | `/api/puntos/{clienteId}/saldo` | **interno**, `X-Service-Key` | Saldo de un cliente → `{clienteId, saldo}` |
+| `GET` | `/api/puntos/me` | Bearer `CLIENTE` | Mi saldo y el historial de movimientos, para el comercio de mi token |
+| `GET` | `/api/puntos/{clienteId}/saldo?comercioId=` | **interno**, `X-Service-Key` | Saldo de un cliente en ese comercio → `{clienteId, saldo}` |
 
 Errores: 409 código de cupón duplicado · 403 tipo de usuario sin permiso · 404 cupón inexistente o de otro comercio · 401 token o clave de servicio inválidos.
 
@@ -96,7 +96,9 @@ La conversión de puntos (1 punto = 0,01 €) está hoy como constante en el có
 ## Modelo de datos (`fidelidad_db`)
 
 - **`cupones`** — `comercioId` (indexado), `codigo` (único), `porcentajeDescuento`, `usosMaximosPorUsuario`, `usos[]`, `estado`, `fechaCaducidad`
-- **`cuentas_puntos`** — `clienteId` (único), `saldo`, `movimientos[{pedidoId, tipo, puntos, fecha}]`
+- **`cuentas_puntos`** — `clienteId` + `comercioId` (índice único compuesto), `saldo`, `movimientos[{pedidoId, tipo, puntos, fecha}]`
+
+**El saldo de puntos es por (cliente, comercio), no global.** Coherente con que cada cliente esté atado a un único comercio desde su registro (`auth-service`): un mismo `clienteId` tiene una `CuentaPuntos` distinta por cada comercio en el que haya pagado.
 
 ## Limitaciones conocidas
 

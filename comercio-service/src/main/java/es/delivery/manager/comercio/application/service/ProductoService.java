@@ -3,6 +3,7 @@ package es.delivery.manager.comercio.application.service;
 import es.delivery.manager.comercio.application.usecase.CreateProductoUseCase;
 import es.delivery.manager.comercio.application.usecase.DeleteProductoUseCase;
 import es.delivery.manager.comercio.application.usecase.ListProductosUseCase;
+import es.delivery.manager.comercio.application.usecase.UpdateDisponibilidadProductoUseCase;
 import es.delivery.manager.comercio.application.usecase.UpdateProductoUseCase;
 import es.delivery.manager.comercio.domain.model.Producto;
 import es.delivery.manager.comercio.domain.model.TokenClaims;
@@ -16,7 +17,7 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class ProductoService implements CreateProductoUseCase, UpdateProductoUseCase,
-        DeleteProductoUseCase, ListProductosUseCase {
+        UpdateDisponibilidadProductoUseCase, DeleteProductoUseCase, ListProductosUseCase {
 
     private final ProductoRepository productoRepository;
 
@@ -38,6 +39,14 @@ public class ProductoService implements CreateProductoUseCase, UpdateProductoUse
         producto.setImagenUrl(cambios.getImagenUrl());
         producto.setPrecio(cambios.getPrecio());
         producto.setDisponible(cambios.isDisponible());
+        return productoRepository.save(producto);
+    }
+
+    @Override
+    public Producto updateDisponibilidad(TokenClaims caller, String productoId, boolean disponible) {
+        checkRootOAdmin(caller);
+        Producto producto = getProductoDelComercio(caller, productoId);
+        producto.setDisponible(disponible);
         return productoRepository.save(producto);
     }
 

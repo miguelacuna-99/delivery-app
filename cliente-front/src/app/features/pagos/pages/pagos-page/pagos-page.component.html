@@ -1,0 +1,32 @@
+<div class="pagos-page page-stack">
+  <h1>Pagos</h1>
+
+  <ui-card>
+    <h2 class="pagos-page__subtitulo">Añadir tarjeta</h2>
+    <app-tarjeta-form [saving]="saving()" (guardar)="guardar($event)" />
+  </ui-card>
+
+  <div>
+    <h2 class="pagos-page__subtitulo">Tarjetas guardadas</h2>
+
+    @if (loading()) {
+      <ui-spinner label="Cargando tarjetas..." />
+    } @else if (tarjetas().length === 0) {
+      <p class="pagos-page__vacio">No tienes tarjetas guardadas todavía.</p>
+    } @else {
+      <div class="pagos-page__lista">
+        @for (tarjeta of tarjetas(); track tarjeta.id) {
+          <div class="pagos-page__item">
+            <app-tarjeta-preview
+              [numero]="'•••• •••• •••• ' + tarjeta.ultimos4"
+              [titular]="tarjeta.titular"
+              [vencimiento]="vencimientoDe(tarjeta)"
+              [marca]="tarjeta.marca"
+            />
+            <ui-button variant="ghost" (clicked)="eliminar(tarjeta)">Eliminar</ui-button>
+          </div>
+        }
+      </div>
+    }
+  </div>
+</div>

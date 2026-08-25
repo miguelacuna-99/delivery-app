@@ -23,6 +23,7 @@ public class Pago {
     private String pedidoId;
     private String comercioId;
     private String clienteId;
+    private String tarjetaId;
     private BigDecimal importe;
     private String firma;
     private EstadoPago estado;

@@ -62,26 +62,30 @@ class EndpointsInternosIntegrationTest {
 
     @Test
     void elSaldoSinClaveDeServicioResponde401() throws Exception {
-        mockMvc.perform(get("/api/puntos/cliente-1/saldo"))
+        mockMvc.perform(get("/api/puntos/cliente-1/saldo").param("comercioId", "comercio-1"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.error").exists());
 
-        verify(consultarSaldoUseCase, never()).saldoPuntos(anyString());
+        verify(consultarSaldoUseCase, never()).saldoPuntos(anyString(), anyString());
     }
 
     @Test
     void elSaldoConClaveIncorrectaResponde401() throws Exception {
-        mockMvc.perform(get("/api/puntos/cliente-1/saldo").header("X-Service-Key", "clave-inventada"))
+        mockMvc.perform(get("/api/puntos/cliente-1/saldo")
+                        .param("comercioId", "comercio-1")
+                        .header("X-Service-Key", "clave-inventada"))
                 .andExpect(status().isUnauthorized());
 
-        verify(consultarSaldoUseCase, never()).saldoPuntos(anyString());
+        verify(consultarSaldoUseCase, never()).saldoPuntos(anyString(), anyString());
     }
 
     @Test
     void elSaldoConLaClaveCorrectaResponde200() throws Exception {
-        when(consultarSaldoUseCase.saldoPuntos("cliente-1")).thenReturn(250);
+        when(consultarSaldoUseCase.saldoPuntos("cliente-1", "comercio-1")).thenReturn(250);
 
-        mockMvc.perform(get("/api/puntos/cliente-1/saldo").header("X-Service-Key", CLAVE_BUENA))
+        mockMvc.perform(get("/api/puntos/cliente-1/saldo")
+                        .param("comercioId", "comercio-1")
+                        .header("X-Service-Key", CLAVE_BUENA))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.clienteId").value("cliente-1"))
                 .andExpect(jsonPath("$.saldo").value(250));

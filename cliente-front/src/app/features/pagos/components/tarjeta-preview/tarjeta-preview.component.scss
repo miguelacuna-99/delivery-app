@@ -1,0 +1,98 @@
+.tarjeta-preview {
+  position: relative;
+  width: 100%;
+  max-width: 340px;
+  aspect-ratio: 1.586 / 1;
+  border-radius: var(--radius-md);
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
+  color: #fff;
+  background: linear-gradient(135deg, #2451d6 0%, #1a3aa8 55%, #14276e 100%);
+  box-shadow: var(--shadow-md);
+  transition: background var(--duration-base) var(--ease-standard);
+
+  &--visa {
+    background: linear-gradient(135deg, #2451d6 0%, #1a3aa8 55%, #14276e 100%);
+  }
+
+  &--mastercard {
+    background: linear-gradient(135deg, #3a3a3a 0%, #1f1f1f 55%, #0a0a0a 100%);
+  }
+
+  &--otra {
+    background: linear-gradient(135deg, #4a4f5c 0%, #2f333c 55%, #1c1e24 100%);
+  }
+}
+
+.tarjeta-preview__brillo {
+  position: absolute;
+  inset: -40% -10% auto auto;
+  width: 60%;
+  aspect-ratio: 1;
+  border-radius: var(--radius-full);
+  background: radial-gradient(closest-side, rgba(255, 255, 255, 0.16), transparent);
+  pointer-events: none;
+}
+
+.tarjeta-preview__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.tarjeta-preview__chip {
+  width: 38px;
+  height: 28px;
+  border-radius: 6px;
+  background: linear-gradient(135deg, #f4d97a, #c9a94a);
+}
+
+.tarjeta-preview__marca {
+  font-weight: 700;
+  font-size: 0.85rem;
+  letter-spacing: 0.06em;
+}
+
+.tarjeta-preview__numero {
+  font-family: 'Courier New', ui-monospace, monospace;
+  font-size: clamp(1rem, 4.5vw, 1.35rem);
+  letter-spacing: 0.12em;
+  font-weight: 600;
+  transition: opacity var(--duration-fast) var(--ease-standard);
+}
+
+.tarjeta-preview__bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: var(--space-4);
+}
+
+.tarjeta-preview__campo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+
+  &--vence {
+    text-align: right;
+  }
+}
+
+.tarjeta-preview__label {
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  opacity: 0.7;
+}
+
+.tarjeta-preview__valor {
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

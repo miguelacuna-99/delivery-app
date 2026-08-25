@@ -1,0 +1,65 @@
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 23, 31, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 900;
+  padding: var(--space-4);
+  animation: modal-backdrop-in var(--duration-base) var(--ease-standard);
+}
+
+.modal {
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  padding: var(--space-5);
+  width: 380px;
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  animation: modal-in var(--duration-base) var(--ease-standard);
+}
+
+.modal__header {
+  h3 {
+    margin: 0;
+    font-size: 1.05rem;
+  }
+}
+
+.modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+}
+
+@keyframes modal-backdrop-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .modal-backdrop,
+  .modal {
+    animation: none;
+  }
+}
