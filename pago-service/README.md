@@ -52,7 +52,7 @@ Sustituir el mock por una pasarela de verdad es implementar `PasarelaPort` en ot
 
 ## Dependencias
 
-**Maven** (Spring Boot 3.3.0, Java 21): `spring-boot-starter-web`, `spring-boot-starter-data-mongodb`, `spring-boot-starter-amqp`, `delivery-contracts` 1.1.0, Lombok 1.18.30, MapStruct 1.5.5.Final, `spring-boot-starter-test`.
+**Maven** (Spring Boot 3.3.0, Java 21): `spring-boot-starter-web`, `spring-boot-starter-data-mongodb`, `spring-boot-starter-amqp`, `delivery-contracts` 1.0.0, Lombok 1.18.30, MapStruct 1.5.5.Final, `spring-boot-starter-test`.
 
 **Infraestructura:** MongoDB y RabbitMQ.
 

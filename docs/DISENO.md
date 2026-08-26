@@ -101,12 +101,12 @@ La plataforma cobra a los comercios por suscripción, así que el propio comerci
 
 ## Estados del pedido
 
-`PENDIENTE` → (comercio acepta, fija tiempo estimado y se dispara el cobro) `ACEPTADO` → (la pasarela autoriza) `PAGADO` → (repartidor registra nº) `ENTREGADO`
+`PENDIENTE` → (comercio acepta, fija tiempo estimado) `ACEPTADO` → (el cliente elige tarjeta y pulsa pagar, `POST /api/pedidos/{id}/pagar`; la pasarela autoriza) `PAGADO` → (repartidor registra nº) `ENTREGADO`
 
 Ver también **Integridad del pedido** más abajo: precios revalidados, comercio suspendido y plazo de pago.
 
 - `PENDIENTE` → `RECHAZADO` (mensaje opcional del comercio).
-- `ACEPTADO` → `CANCELADO` si el pago falla o expira el plazo de pago → publica `pedido.cancelado` y **se devuelven puntos y uso de cupón**.
+- `ACEPTADO` → `CANCELADO` si el pago falla (tarjeta inválida o denegada) o vence el plazo de pago sin que el cliente llegue a pagar → publica `pedido.cancelado` y **se devuelven puntos y uso de cupón**.
 - `PAGADO` → `PENDIENTE_DEVOLUCION`: el comercio anula un pedido ya pagado; se solicita la devolución del dinero al banco (mock en pago-service).
 - `PENDIENTE_DEVOLUCION` → `DEVUELTO`: el banco confirma el ingreso al cliente; fidelidad retira los puntos que ese pedido había otorgado.
 
@@ -125,7 +125,7 @@ Esta tabla refleja lo que hay implementado, no la intención: si se añade un co
 | `pedido.rechazado` | `PedidoEventMessage` | pedido-service | fidelidad-service (devuelve puntos y uso de cupón) |
 | `pedido.entregado` | `PedidoEventMessage` | pedido-service | fidelidad-service (llega por el binding `pedido.*`, sin efecto) |
 | `pedido.cancelado` | `PedidoEventMessage` | pedido-service (pago denegado o plazo vencido) | fidelidad-service (devuelve puntos **y uso del cupón**) |
-| `pago.solicitado` | `PedidoEventMessage` | pedido-service (al aceptar) | pago-service (mock procesa el cobro) |
+| `pago.solicitado` | `PedidoEventMessage` | pedido-service (el cliente pulsa pagar, no al aceptar) | pago-service (valida la tarjeta y procesa el cobro mock) |
 | `pago.completado` | `PagoEventMessage` | pago-service | pedido-service (→ PAGADO), notificacion-service (PEDIDOS PAGADOS), fidelidad-service (otorga puntos según gasto) |
 | `pago.fallido` | `PagoEventMessage` | pago-service | pedido-service (→ CANCELADO, que a su vez publica `pedido.cancelado`) |
 | `devolucion.solicitada` | `PedidoEventMessage` | pedido-service (comercio anula un pedido pagado) | pago-service (mock banco procesa la devolución) |
@@ -150,11 +150,11 @@ Tres reglas que cierran los agujeros por los que se colaba un pedido mal formado
 
 1. **El precio lo pone el catálogo, no el cliente.** En el checkout, `pedido-service` pide el catálogo a `comercio-service` (`ProductoPort` → `ComercioClient`) y **reconstruye los items** con el nombre y el precio vigentes. Del carrito solo se respeta *qué* se pide y *cuánta* cantidad. Si el precio enviado no coincide con el del catálogo se rechaza con **409** en vez de cobrar en silencio un importe que el cliente no vio: puede ser una manipulación, pero también un catálogo que cambió mientras compraba, y en ambos casos lo correcto es que refresque. Un producto que no está en ese catálogo o está marcado como no disponible da **400**, igual que una cantidad no positiva — sin esa comprobación, una cantidad negativa restaría del total.
 2. **Un comercio suspendido no admite pedidos.** `pedido-service` consume `comercio.suspendido` / `comercio.reactivado` y mantiene una réplica local del estado (colección `estados_comercio`), así que no tiene que preguntar a `comercio-service` en cada checkout. De un comercio del que no sabe nada asume que es operativo (*fail-open*): lo contrario dejaría el sistema sin poder pedir a nadie tras un arranque en frío.
-3. **Un pedido no se queda esperando para siempre.** Un pedido `ACEPTADO` espera a que responda la pasarela; si el mensaje se pierde se quedaría bloqueado reteniendo los puntos y el cupón del cliente. Un barrido programado (`pedido.pago.timeout-min`, 15 min por defecto) lo pasa a `CANCELADO` y libera la reserva.
+3. **Un pedido no se queda esperando para siempre.** Un pedido `ACEPTADO` espera a que el cliente elija tarjeta y pulse pagar, y luego a que responda la pasarela; si nunca paga o el mensaje se pierde, se quedaría bloqueado reteniendo los puntos y el cupón del cliente. Un barrido programado (`pedido.pago.timeout-min`, 15 min por defecto, contado desde `fechaAceptacion`) lo pasa a `CANCELADO` y libera la reserva.
 
 ## Limitaciones conocidas
 
-1. **`pago-service` no expone API REST.** Es puramente dirigido por eventos; para probarlo se publica en el exchange (ver su colección de Postman). Es una decisión, no una carencia.
+1. **El cobro en sí sigue siendo puramente dirigido por eventos.** `pago-service` solo expone REST (`/api/tarjetas`) para que el cliente gestione sus tarjetas guardadas; el cobro se dispara y resuelve enteramente por `pago.solicitado` / `pago.completado` / `pago.fallido`, sin ningún endpoint para forzarlo o consultarlo síncronamente. Es una decisión, no una carencia.
 2. **El barrido de timeout no tiene cerrojo distribuido.** Con varias réplicas de `pedido-service` todas ejecutarían el barrido. No corrompe nada — cancelar solo actúa sobre pedidos `ACEPTADO` y es idempotente — pero repite trabajo. Con más de una réplica conviene ShedLock o equivalente.
 3. **`EN_GRACIA` no se activa sola.** Está modelado y respetado por `esOperativo()`, pero no hay proceso que degrade `ACTIVA → EN_GRACIA → SUSPENDIDA` al vencer la suscripción: hoy suspender es una acción explícita de la plataforma.
 4. **Los tests de integración no levantan infraestructura.** Cubren el contexto web de cada servicio (rutas, JSON, interceptores de seguridad y traducción de excepciones a códigos HTTP) con los puertos mockeados. Ni Mongo ni RabbitMQ ni las llamadas HTTP reales entre servicios se ejercitan: eso pediría Testcontainers, que ataría el build a tener Docker en marcha.
